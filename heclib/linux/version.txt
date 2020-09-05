@@ -1,0 +1,2 @@
+#define DSS_VERSION "7-HV"
+#define DSS_VERSION_DATE "28 July 2020"

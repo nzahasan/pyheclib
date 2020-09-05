@@ -1,0 +1,18 @@
+#[ignore build dirs files]
+build
+pyheclib.*.so
+
+#[ignore editor specific]
+.vscode
+
+#[ignore dss files]
+*.dss
+
+#[ignore tmp files]
+tmp
+
+src/*.c
+
+
+tests/*.so
+

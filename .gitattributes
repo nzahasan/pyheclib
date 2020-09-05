@@ -1,0 +1,7 @@
+*.ipynb linguist-vendored
+*.zip binary
+*.geojson binary
+*.nc binary
+*.png binary
+*.dss binary
+.so
