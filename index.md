@@ -1,4 +1,4 @@
-# pyheclib <img width="25" src="assets/dss-icon.svg" alt="HEC-DSS">
+# pyheclib <img width="25" src="https://raw.githubusercontent.com/nzahasan/pyheclib/master/assets/dss-icon.svg" alt="HEC-DSS">  
 
 A minimal python interface for easier reading and writing record of HEC-DSS files  
 
