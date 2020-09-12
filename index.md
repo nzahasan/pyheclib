@@ -17,7 +17,7 @@ $ pip3 install https://github.com/nzahasan/pyheclib/zipball/master
 
 
 
-## Reading & writing of regular time series data
+## Regular time-series
 
 ```python
 import numpy as np
@@ -61,7 +61,7 @@ print(rec.data())
 # close the dss file
 dss_tseries.close()
 ```
-## Reading & writing of irregular time series data
+## Irregular time-series
 
 ```python
 
