@@ -112,4 +112,5 @@ dss_tseries.close()
 ### Resources  
 
 - [HEC-DSS C Library](https://www.hec.usace.army.mil/software/hec-dss/downloads.aspx) 
+- [HEC-DSSVue (A java based gui)](https://www.hec.usace.army.mil/software/hec-dssvue/)
 
