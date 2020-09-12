@@ -3,8 +3,7 @@
 A minimal python interface for easier reading and writing record of HEC-DSS files  
 
 HEC-DSS, is a database system designed by [U.S. Army Corps of Engineers' Hydrologic Engineering Center](https://www.hec.usace.army.mil/)   
-to efficiently store and retrieve scientific data that is typically sequential.   
-HEC-DSS is incorporated into most of HEC’s major application programs like HEC-HMS, HEC-RAS etc.
+to efficiently store and retrieve scientific data that is typically sequential. HEC-DSS is incorporated into most of HEC’s major application programs like HEC-HMS, HEC-RAS etc.
 
 record types implemented in pyheclib are:
 	- Time Series irregular & regular
