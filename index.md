@@ -5,10 +5,15 @@
 $ pip3 install https://github.com/nzahasan/pyheclib/zipball/master 
 ```
 
-# Usage
 
-## Writing and reading regular time series record in dss file:
+# Open & close dss file
 
+
+
+
+
+
+# Read Write Time-Series 
 ```python
 import numpy as np
 import pyheclib as phl
