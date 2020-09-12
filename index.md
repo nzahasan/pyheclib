@@ -15,7 +15,8 @@ $ pip3 install https://github.com/nzahasan/pyheclib/zipball/master
 
 ## Read Write Time-Series 
 
-- Reading & writing of regular time series data
+#### Reading & writing of regular time series data
+
 ```python
 import numpy as np
 import pyheclib as phl
