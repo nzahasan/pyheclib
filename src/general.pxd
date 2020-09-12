@@ -19,6 +19,11 @@ cdef extern from "heclib.h":
 		int STATUS_FALSE
 
 
+		int UNDEFINED_TIME 
+		float UNDEFINED_FLOAT 
+		double UNDEFINED_DOUBLE
+
+
 		
 	int  zopen  (long long *ifltab, const char *dssFilename)
 	int  zopen6 (long long *ifltab, const char *dssFilename)

@@ -19,7 +19,7 @@ reg_data = np.array([1.11, 2.12, 45.33, 2.32, 7.486868686, 9.89, 8888888.4440420
 regular_ts = phl.tseries()
 
 regular_ts.regular(
-		"/Alpha/Beta/Flow//3Hour/Femta/",
+		"/Alpha/Beta/Flow/*/3Hour/Femta/",
 		reg_data,
 		"01Jan2020",
 		"06:39",

@@ -29,15 +29,22 @@ paired_dss6.write(pr)
 paired_dss7.write(pr)
 
 
-rec7 = paired_dss7.read("/Alpha/Beta/Stage-Flow/Rating Table//Fempto",pyheclib.record_type.PAIRED)
-rec6 = paired_dss6.read("/Alpha/Beta/Stage-Flow/Rating Table//Fempto",pyheclib.record_type.PAIRED)
+# rec7 = paired_dss7.read("/Alpha/Beta/Stage-Flow/Rating Table//Fempto",pyheclib.record_type.PAIRED)
+# rec6 = paired_dss6.read("/Alpha/Beta/Stage-Flow/Rating Table//Fempto",pyheclib.record_type.PAIRED)
 
-curves6 = rec6.data()
-curves7 = rec7.data()
+# curves6 = rec6.data()
+# curves7 = rec7.data()
+
+
+
+
+
+
 
 
 paired_dss6.close()
 paired_dss7.close()
+
 
 
 

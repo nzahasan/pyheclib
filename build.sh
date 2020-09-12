@@ -11,10 +11,12 @@ python3 setup.py build_ext --inplace
 
 # remove dss
 
-if [ -f $root/*.dss ]; then
-    rm $root/pyheclib.*.so
+
+n_dss=`ls -1 *.dss|wc -l`
+if [ $n_dss != 0 ]; then
+    rm $root/*.dss
 fi
 
 
-cp pyheclib.cpython-*linux-gnu.so tests/
-cp pyheclib.cpython-*linux-gnu.so tools/
+# cp pyheclib.cpython-*linux-gnu.so tests/
+# cp pyheclib.cpython-*linux-gnu.so tools/

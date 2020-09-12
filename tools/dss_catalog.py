@@ -12,7 +12,7 @@ def main(filename):
 
     dss = phl.hecdss(filename)
 
-    catalog = dss.catalog("/ALPHA/BETA/FLOW/*/IR-DAY/FEMTA/")
+    catalog = dss.catalog("")
 
     for i,cat in enumerate(catalog):
         print(f"{i:02d}:",cat)

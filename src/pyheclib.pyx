@@ -57,6 +57,10 @@ cpdef enum granularity:
 # zl_status = zopenLog(bytes("/dev/null",encoding="ascii"));
 
 
+cdef int rec_data_type(np.ndarray[long long, mode="c"] ifltab,char* pathname):
+	print(pathname)
+	return zdataType (&ifltab[0], pathname)
+
 
 
 ''' ** healper funcions ** '''
@@ -73,7 +77,7 @@ cdef str2b(str asc_str):
 
 ''' ** controlling message level ** '''
 
-zset(str2b("mess"),str2b("general"),0)
+zset(str2b("mess"),str2b("general"),1)
 
 
 ''' ** wrapper for hec-dss C functions ** '''
@@ -340,16 +344,24 @@ cdef class hecdss():
 
 		if fl_status<0:
 			raise Exception("Failed to open file",filename,"status",fl_status)
-		
 	
-	cpdef dssrec read(self, str path_name, int _record_type):
+	cpdef rt(self,str path_name):
+
+		return rec_data_type(self.ifltab,str2b(path_name))
+	
+	cpdef dssrec read(self, str path_name, int _record_type, 
+		str start_date=None, str end_date=None):
+		
 		cdef:
 			int status
 			dssrec rec_obj = dssrec()
 
 
 		if _record_type == record_type.TSERIES:
-			status = read_tseries(self.ifltab,str2b(path_name),rec_obj)
+
+			if start_date == None and end_date == None:
+				# read all record
+				status = read_tseries(self.ifltab,str2b(path_name),rec_obj)
 		
 		elif _record_type == record_type.GRIDDED:
 			# status = read_gridded(self.ifltab,str2b(path_name))
@@ -440,6 +452,7 @@ cdef class dssrec():
 		str y_unit
 		str x_type
 		str y_type
+		int n_curve  # number of curve
 
 
 
@@ -470,31 +483,31 @@ cdef class dssrec():
 
 	cpdef data(self,curve_no=0):
 		'''
-		curve_no is used for paired data and ignored
-		other data types.
+		curve_no is used for paired data and ignored other data types.
+		iterate n_curve times to get all the curves
 		return : dataframe based on record type
 		'''
 
 		# should be safe!
 		_,PART_A,PART_B,PART_C,PART_D,PART_E,PART_F,_ = self.pathname.split('/') 
 		
-		rdf = DataFrame()
+		ret_df = DataFrame()
 
 		if self.record_type == record_type.TSERIES:
-			rdf['Time'] = self.times
-			rdf[PART_C] = self.values
-			# rdf.set_index('Time',inplace=True)
+			ret_df['Time'] = self.times
+			ret_df[PART_C] = self.values
+			# ret_df.set_index('Time',inplace=True)
 
 		elif self.record_type == record_type.PAIRED:
 			_x_name,_y_name= PART_C.strip().split('-')
-			rdf[_x_name] = self.x_vals
-			rdf[_y_name] = self.y_vals
+			ret_df[_x_name] = self.x_vals
+			ret_df[_y_name] = self.y_vals
 
 
 		elif self.record_type == record_type.GRIDDED:
 			pass
 
-		return rdf
+		return ret_df
 
 
 	cdef str ts_repr(self):
