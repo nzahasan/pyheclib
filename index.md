@@ -1,4 +1,4 @@
-# Install pyheclib
+## Install pyheclib
 
 ```bash
 # on ubuntu 18.04/20.04
@@ -6,14 +6,16 @@ $ pip3 install https://github.com/nzahasan/pyheclib/zipball/master
 ```
 
 
-# Open & close dss file
+## Open & close dss file
 
 
 
 
 
 
-# Read Write Time-Series 
+## Read Write Time-Series 
+
+- Reading & writing of regular time series data
 ```python
 import numpy as np
 import pyheclib as phl
