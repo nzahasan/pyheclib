@@ -17,7 +17,7 @@ $ pip3 install https://github.com/nzahasan/pyheclib/zipball/master
 
 
 
-### Reading & writing of regular time series data
+## Reading & writing of regular time series data
 
 ```python
 import numpy as np
@@ -61,7 +61,7 @@ print(rec.data())
 # close the dss file
 dss_tseries.close()
 ```
-Writing and reading irregular time series record in dss file:
+## Reading & writing of irregular time series data
 
 ```python
 
@@ -106,7 +106,10 @@ dss_tseries.close()
 ```
 
 
-### Resources  
+# Paired Data
+
+
+# Resources  
 
 - [HEC-DSS C Library](https://www.hec.usace.army.mil/software/hec-dss/downloads.aspx) 
 - [HEC-DSSVue (A java based gui)](https://www.hec.usace.army.mil/software/hec-dssvue/)
