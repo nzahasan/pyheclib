@@ -1,26 +1,13 @@
-# pyheclib <img width="25" src="https://raw.githubusercontent.com/nzahasan/pyheclib/master/assets/dss-icon.svg" alt="HEC-DSS">  
-
-A minimal python interface for easier reading and writing record of HEC-DSS files  
-
-HEC-DSS, is a database system designed by [U.S. Army Corps of Engineers' Hydrologic 
-Engineering Center](https://www.hec.usace.army.mil/) to efficiently store and retrieve 
-scientific data that is typically sequential. HEC-DSS is incorporated into most of HEC’s 
-major application programs like HEC-HMS, HEC-RAS etc.
-
-record types implemented in pyheclib are:
-	- Time Series irregular & regular
-	- Paired Data
-
-### Install
+# Install pyheclib
 
 ```bash
 # on ubuntu 18.04/20.04
 $ pip3 install https://github.com/nzahasan/pyheclib/zipball/master 
 ```
 
-### Usage
+# Usage
 
-Writing and reading regular time series record in dss file:
+## Writing and reading regular time series record in dss file:
 
 ```python
 import numpy as np
