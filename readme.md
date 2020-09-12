@@ -80,17 +80,8 @@ dss_tseries = phl.hecdss("tseries_ir_dss.dss",7)
 
 
 # generate data of irregular tseries data 
-ireg_data = np.array([1.11, 2.12, 45.33, 2.32, 7.486868686, 9.89, 8888888.4440420,4.44])
-ireg_time = np.array([
-					dt(2020,1,2,3,44),
-					dt(2020,1,4,4,43),
-					dt(2020,1,6,7,56),
-					dt(2020,1,11,8,25),
-					dt(2020,1,13,11,17),
-					dt(2020,1,14,13,30),
-					dt(2020,1,20,19,40),
-					dt(2020,1,23,0,0),
-					])
+ireg_data = np.array([1.11, -502.12, 4500.33, ])
+ireg_time = np.array([ dt(2020,1,2,3,44), dt(2020,1,4,4,43),dt(2020,1,6,7,56),])
 
 
 # create a timeseries container
