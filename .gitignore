@@ -1,6 +1,7 @@
-#[ignore build dirs files]
+#[ignore build dirs & binary files]
 build
 pyheclib.*.so
+pyheclib.*.pyd
 
 #[ignore editor specific]
 .vscode

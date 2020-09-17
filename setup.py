@@ -36,7 +36,7 @@ if sys.platform.lower()=='linux':
 
 	libraries_list = ['gcc','m','dl','gfortran']
 
-if sys.platform.lower()=='windows':
+elif sys.platform.lower().startswith('win'):
 
 	# requires:
 	# * Intel fortran compiler
@@ -44,7 +44,17 @@ if sys.platform.lower()=='windows':
 
 	print("*** Platform *** WINDOWS ***")
 
-	
+
+	extra_objects_list = [
+		os.path.join(root,'heclib\windows\Release64\heclib_c_v6v7.lib'),
+		os.path.join(root,'heclib\windows\Release64\heclib_f_v6v7.lib')
+	]
+
+	library_dirs_list =[
+		# intel fortran compiler library location
+		'C:\\Program Files (x86)\\IntelSWTools\\compilers_and_libraries_2020\\windows\\compiler\\lib\\intel64_win'
+	]
+
 
 
 extension = [

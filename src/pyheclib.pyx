@@ -4,6 +4,7 @@
 '''
 
 
+import os, sys
 import numpy as np 
 cimport numpy as np
 from pandas import DataFrame 
@@ -69,6 +70,21 @@ cpdef enum granularity:
 
 
 
+
+'''
+Dss version 6 outputs log messages 
+even after explicitly setting message level
+source: https://stackoverflow.com/questions/5081657/
+'''
+
+sys.stdout.flush()
+newstdout = os.dup(1)
+devnull = os.open(os.devnull, os.O_WRONLY)
+os.dup2(devnull, 1)
+os.close(devnull)
+sys.stdout = os.fdopen(newstdout, 'w')
+
+
 # log file
 # zl_status = zopenLog(bytes("/dev/null",encoding="ascii"));
 
@@ -76,8 +92,6 @@ cpdef enum granularity:
 cdef int rec_data_type(np.ndarray[long long, mode="c"] ifltab,char* pathname):
 	
 	return zdataType (&ifltab[0], pathname)
-
-
 
 
 
@@ -125,8 +139,8 @@ cdef int check_path(str full_path) except? -99:
 
 
 ''' ** controlling message level ** '''
-
-zset(str2b("mess"),str2b("general"),0)
+# in windows this function oddly outputs a newline
+# zset(str2b("mess"),str2b("general"),0)
 
 
 ''' ** wrapper for hec-dss C functions ** '''
@@ -194,7 +208,7 @@ cdef zStructTimeSeries* gen_double_iregts_struct(char* pathname,
 
 cdef zStructCatalog* dss_catalog(np.ndarray[long long, mode="c"] ifltab, 
 	char* search_path) except? NULL:
-	print(search_path)
+	# print(search_path)
 	cdef:
 		zStructCatalog* catalog_ptr = zstructCatalogNew()
 		int status = zcatalog(&ifltab[0],search_path,catalog_ptr,1)
@@ -281,12 +295,12 @@ cdef int read_gridded(np.ndarray[long long, mode="c"] ifltab, char * rec_path_na
 		int status = 0
 
 
-	print(gird_ptr.pathname )
+	# print(gird_ptr.pathname )
 
 	status = zspatialGridRetrieve(&ifltab[0], gird_ptr, 1)
 
-	if status != STATUS_OKAY:
-		print("failed")
+	# if status != STATUS_OKAY:
+	# 	print("failed")
 
 
 	return status
