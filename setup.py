@@ -1,35 +1,67 @@
 #!/usr/bin/env python3
-import os
-from distutils.core import setup
+import os,sys,numpy
+# from distutils.core import setup
+from setuptools import setup
 from Cython.Build import cythonize
 from distutils.extension import Extension
 
 root = os.path.dirname(os.path.realpath(__file__))
 
-heclib_obj = os.path.join(root,'heclib/linux/heclib.a')
+# platform dependent
+extra_objects_list = []
+library_dirs_list = []
+compiler_arg_list = []
+libraries_list = []
+
+# platform independent
+macros_list = [("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION"),]
+include_dirs_list = [os.path.join(root,'heclib/headers'),numpy.get_include()]
+sources_list = ["src/pyheclib.pyx"]
+
+if sys.platform.lower()=='linux':
+	print("*** Platform *** LINUX ***")
+	
+	extra_objects_list = [os.path.join(root,'heclib/linux/heclib.a')]
+
+	compiler_arg_list = [
+		# '-lgcc','-lm', '-ldl', '-lgfortran',
+		'-O0',
+		# disable warnings 
+		'-Wno-unused-but-set-variable',
+		'-Wno-unused-parameter', 
+		'-Wno-unused-variable',
+		'-Wno-uninitialized',
+		'-Wno-unused-function'
+	]
+
+	libraries_list = ['gcc','m','dl','gfortran']
+
+if sys.platform.lower()=='windows':
+
+	# requires:
+	# * Intel fortran compiler
+	# * Microsoft visual c++ 14 build tools
+
+	print("*** Platform *** WINDOWS ***")
+
+	
+
 
 extension = [
 	Extension("pyheclib",
-	sources=["src/pyheclib.pyx"], 
-	libraries=['gcc','m','dl','gfortran'],
-	define_macros=[
-		("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION"),
-	],
-	include_dirs=[os.path.join(root,'heclib/headers')],
-	library_dirs=[],
-	extra_compile_args=[
-			'-lgcc','-lm', '-ldl', '-lgfortran','-O0',
-			# disable warnings 
-			# '-Wno-unused-but-set-variable',
-			# '-Wno-unused-parameter', 
-			# '-Wno-unused-variable',
-			# '-Wno-uninitialized'
-			],
-	extra_objects=[heclib_obj],
+		sources = sources_list, 
+		libraries = libraries_list,
+		define_macros = macros_list,
+		include_dirs = include_dirs_list,
+		library_dirs = library_dirs_list,
+		extra_compile_args = compiler_arg_list,
+		extra_objects = extra_objects_list,
 	),
 ]
 
 setup(
+    python_requires='>=3.6',
+	version='0.1.0',
 	name='build-pyheclib',
-	ext_modules= cythonize(extension[0],language_level='3'),
+	ext_modules= cythonize(extension,language_level='3'),
 )

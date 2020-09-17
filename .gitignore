@@ -16,3 +16,7 @@ src/*.c
 
 tests/*.so
 
+
+*.egg-info
+
+dist

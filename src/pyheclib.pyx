@@ -18,31 +18,47 @@ from spatial cimport *
 __version__='0.1.0'
 
 # vars & enums
-cdef int IFLTAB_SIZE=250
+cdef int IFLTAB_SIZE = 250
+cdef int MAX_PATH_LEN = 391
+cdef int MAX_PART_LEN = 64
+cpdef DSS_BASE_DATE = dt(1900,1,1)
 
 cpdef enum record_type:
 	TSERIES = 0
 	PAIRED  = 1
 	GRIDDED = 2
 
+
 cdef dict record_type_s = {
-		record_type.TSERIES : "TSERIES", 
-		record_type.PAIRED  : "PAIRED",  
-		record_type.GRIDDED : "GRIDDED",
+	record_type.TSERIES : "TSERIES", 
+	record_type.PAIRED  : "PAIRED",  
+	record_type.GRIDDED : "GRIDDED",
+}
+
+
+# record data types
+cpdef enum data_type:
+	INST_VAL = 0
+	INST_CUM = 1
+	PER_AVER = 2
+	PER_CUM  = 3
+
+cdef dict data_type_s = {
+
+	data_type.INST_VAL : "INST-VAL",
+	data_type.INST_CUM : "INST-CUM",
+	data_type.PER_AVER : "PER-AVER",
+	data_type.PER_CUM  : "PER-CUM",
 }
 
 
 cpdef enum axis_type:
-		LINEAR = 1
+	LINEAR = 1
 	
 
 cdef dict axis_type_s = {
-		axis_type.LINEAR :"Linear", 
+	axis_type.LINEAR :"Linear", 
 }
-
-
-
-cpdef DSS_BASE_DATE = dt(1900,1,1)
 
 
 cpdef enum granularity:
@@ -58,12 +74,15 @@ cpdef enum granularity:
 
 
 cdef int rec_data_type(np.ndarray[long long, mode="c"] ifltab,char* pathname):
-	print(pathname)
+	
 	return zdataType (&ifltab[0], pathname)
 
 
 
+
+
 ''' ** healper funcions ** '''
+
 
 cdef b2str(char * char_bytes):
 	'''Convert bytes to ASCII string'''
@@ -74,10 +93,40 @@ cdef str2b(str asc_str):
 	return bytes(asc_str,encoding="ascii")
 
 
+cdef path2parts(str full_path):
+	# * this dosent check for path len 
+	# * use check path for that
+
+	_,PART_A,PART_B,PART_C,PART_D,PART_E,PART_F,_ = full_path.split('/')
+
+	return {'A':PART_A,'B':PART_B,'C':PART_C,'D':PART_D,'E':PART_E,'F':PART_F}
+
+cdef parts2path(str A,str B, str C, str D, str E, str F):
+
+	return f'/{A}/{B}/{C}/{D}/{E}/{F}/'
+
+
+cdef int check_path(str full_path) except? -99:
+
+	if full_path.startswith('/') and full_path.endswith('/'):
+
+		if len(full_path) > MAX_PATH_LEN:
+			return -10
+
+		path_parts = path2parts(full_path)
+
+		for part in path_parts.keys():
+			if len(path_parts[part])>64:
+				return -20
+
+	else:
+		return -1
+	
+
 
 ''' ** controlling message level ** '''
 
-zset(str2b("mess"),str2b("general"),1)
+zset(str2b("mess"),str2b("general"),0)
 
 
 ''' ** wrapper for hec-dss C functions ** '''
@@ -176,10 +225,11 @@ cdef int read_tseries(np.ndarray[long long, mode="c"] ifltab,char* pathname,dssr
 		char cdate[13], ctime[10]
 
 	
-	# for generalization of reg and ireg data
+	# retrive all time cordinate in both cases of
+	# regular and irregular * simplify reding time series
 	ts_ptr.boolRetrieveAllTimes=True
 
-	status = ztsRetrieve(&ifltab[0], ts_ptr, -1,1,0)
+	status = ztsRetrieve(&ifltab[0], ts_ptr, -1, 1, 0)
 
 	if status == 0 :
 	
@@ -194,24 +244,7 @@ cdef int read_tseries(np.ndarray[long long, mode="c"] ifltab,char* pathname,dssr
 
 		datetime_array = np.empty(ts_ptr.numberValues,dtype=dt)
 		
-		# init_time = int(ts_ptr.startTimeSeconds/ts_ptr.timeGranularitySeconds)
-
-		# is this iteration necessary? 
-		# whats the point of memoryview if dosent saves time
-		# probably a better way to do this in python
-		# using Return s the number of milliseconds since Jan 1, 1900
-
 		for ti in range(ts_ptr.numberValues):
-
-			# **** initially used for regular time series 
-			# val_t = init_time + ti * int(ts_ptr.timeIntervalSeconds/ts_ptr.timeGranularitySeconds)
-
-			# getDateAndTime(val_t, ts_ptr.timeGranularitySeconds, 
-			# 			ts_ptr.startJulianDate,
-			# 			cdate, sizeof(cdate), 
-			# 			ctime, sizeof(ctime)
-			# 			)
-			# **** 
 
 			getDateAndTime(ts_ptr.times[ti], ts_ptr.timeGranularitySeconds, 
 						ts_ptr.julianBaseDate,
@@ -222,8 +255,8 @@ cdef int read_tseries(np.ndarray[long long, mode="c"] ifltab,char* pathname,dssr
 			_hrs,_mins = int(ctime[:2]),int(ctime[2:])
 
 			# dtstr = b2str(cdate)+'_'+b2str(ctime)
-			# dtstr may results in  01Jan2020_2400 non standard 
-			# representation of time
+			# in this case dtstr may results in  01Jan2020_2400 
+			# which is a non standard representation of time
 			
 			datetime_array[ti] = dt.strptime(b2str(cdate),"%d%b%Y") \
 								+ delt(hours=_hrs,minutes=_mins) 
@@ -629,18 +662,23 @@ cdef class paired():
 	cdef:
 		zStructPairedData* paired_ptr
 	
+	'''
+		x_vals and y_vals shape should be [n_curve,n_ordinate]
+	'''
+
 	def __cinit__(self,str pathname, x_vals, y_vals,  # xvals and y vals is numpy array
 				x_unit, y_unit, x_type='Linear', y_type='Linear'):
 		
 		cdef: 
-			int num_ordinate = x_vals.shape[0]
-			int num_curve = 1 if len(x_vals.shape)==1 else x_vals.shape[1] 
+			int num_curve = 1 if len(x_vals.shape)==1 else x_vals.shape[0] 
+			int num_ordinate = x_vals.shape[-1]
 
-		
+
 
 		if x_vals.shape != y_vals.shape:
 			raise ValueError("Size mismatch between x and y values")
 
+		# flatten x_vals ans y_vals
 
 		self.paired_ptr = gen_double_paired_struct(str2b(pathname),
 						np.ascontiguousarray(x_vals,dtype=np.double),
