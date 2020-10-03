@@ -75,14 +75,17 @@ cpdef enum granularity:
 Dss version 6 outputs log messages 
 even after explicitly setting message level
 source: https://stackoverflow.com/questions/5081657/
+
 '''
 
-sys.stdout.flush()
-newstdout = os.dup(1)
-devnull = os.open(os.devnull, os.O_WRONLY)
-os.dup2(devnull, 1)
-os.close(devnull)
-sys.stdout = os.fdopen(newstdout, 'w')
+''' * messes up ipython and bpython * '''
+cpdef redir_stdout():
+	sys.stdout.flush()
+	newstdout = os.dup(1)
+	devnull = os.open(os.devnull, os.O_WRONLY)
+	os.dup2(devnull, 1)
+	os.close(devnull)
+	sys.stdout = os.fdopen(newstdout, 'w')
 
 
 # log file
@@ -140,7 +143,7 @@ cdef int check_path(str full_path) except? -99:
 
 ''' ** controlling message level ** '''
 # in windows this function oddly outputs a newline
-# zset(str2b("mess"),str2b("general"),0)
+zset(str2b("mess"),str2b("general"),0)
 
 
 ''' ** wrapper for hec-dss C functions ** '''

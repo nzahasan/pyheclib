@@ -18,5 +18,5 @@ if [ $n_dss != 0 ]; then
 fi
 
 
-# cp pyheclib.cpython-*linux-gnu.so tests/
-# cp pyheclib.cpython-*linux-gnu.so tools/
+cp pyheclib.cpython-*linux-gnu.so tests/
+cp pyheclib.cpython-*linux-gnu.so tools/
