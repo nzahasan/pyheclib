@@ -27,7 +27,6 @@ jobs:
     - name: Build Cython Extension
       run: |
         python setup.py build_ext
-        ls build/
     - name: Test with pytest
       run: |
         # pytest

@@ -1,5 +1,7 @@
-# pyheclib
 <img src="assets/pyheclib_banner.png" alt="pyheclib">
+# pyheclib   
+<img src="https://github.com/nzahasan/pyheclib/workflows/build/badge.svg">  
+
 
 HEC-DSS, is a database system designed by [U.S. Army Corps of Engineers' Hydrologic 
 Engineering Center](https://www.hec.usace.army.mil/) to efficiently store and retrieve 
