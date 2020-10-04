@@ -4,4 +4,6 @@
 *.nc binary
 *.png binary
 *.dss binary
-.so
+*.so binary
+*.tar.gz binary
+*.pxd binary

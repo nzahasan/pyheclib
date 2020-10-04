@@ -72,13 +72,15 @@ cpdef enum granularity:
 
 
 '''
-Dss version 6 outputs log messages 
-even after explicitly setting message level
-source: https://stackoverflow.com/questions/5081657/
+dss version 6 outputs log messages 
+even after explicitly setting message level to 0
 
+stdout redirection
+source: https://stackoverflow.com/questions/5081657/
 '''
 
-''' * messes up ipython and bpython * '''
+# this crashes ipython and bpython
+# hence unusable in jupyter notebook
 cpdef redir_stdout():
 	sys.stdout.flush()
 	newstdout = os.dup(1)
