@@ -1,5 +1,6 @@
 #[ignore build dirs & binary files]
 build
+dist
 pyheclib.*.so
 pyheclib.*.pyd
 
@@ -12,12 +13,7 @@ pyheclib.*.pyd
 #[ignore tmp files]
 tmp
 
-src/*.c
-
-
+#[build residue]
 tests/*.so
-
-
+tools/*.so
 *.egg-info
-
-dist

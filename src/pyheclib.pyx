@@ -16,7 +16,7 @@ from tseries cimport *
 from paired cimport *
 from spatial cimport *
 
-__version__='0.1.0'
+__version__='0.1.1'
 
 # vars & enums
 cdef int IFLTAB_SIZE = 250
@@ -63,10 +63,10 @@ cdef dict axis_type_s = {
 
 
 cpdef enum granularity:
-	SECOND = 1
-	MINUTE = 60
-	HOUR   = 3600
 	DAY    = 86400
+	HOUR   = 3600
+	MINUTE = 60
+	SECOND = 1
 
 
 
@@ -675,7 +675,7 @@ cdef class tseries():
 	# mark the container check on 2nd call if the container is regular or irregular
 
 
-
+# container class for paired data
 cdef class paired():
 
 	cdef:
@@ -707,4 +707,16 @@ cdef class paired():
 						str2b(x_type), str2b(y_type)
 						)
 
-	
+# container class for spatial data
+cdef class spatialgrid():
+	cdef:
+		zStructSpatialGrid* spatialgrid_ptr
+
+	def __cinit__(str path_name,int ncols,int nrows,float xll_corner,float yll_corner):
+
+
+		# 
+		spatialgrid_ptr = zstructSpatialGridNew(str2b(path_name))
+
+		
+		

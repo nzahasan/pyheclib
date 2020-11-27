@@ -1,11 +1,9 @@
 <img src="assets/pyheclib_banner.png" alt="pyheclib">
 
 # pyheclib
-[![Action: Build](https://img.shields.io/badge/python-3.6|3.7|3.8-blue.svg)](#)
+[![Python: Version](https://img.shields.io/badge/python-3.6|3.7|3.8|3.9-blue.svg)](#)
 [![Action: Build](https://github.com/nzahasan/pyheclib/workflows/build/badge.svg)](https://github.com/nzahasan/pyheclib/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
-https://img.shields.io/badge/python-3.5-blue.svg
 
 HEC-DSS, is a database system designed by [U.S. Army Corps of Engineers' Hydrologic 
 Engineering Center](https://www.hec.usace.army.mil/) to efficiently store and retrieve 
