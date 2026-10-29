@@ -1,4 +1,4 @@
-<img src="assets/pyheclib_banner.png" alt="pyheclib">
+<img src="https://raw.githubusercontent.com/nzahasan/pyheclib/main/assets/pyheclib_banner.png" alt="pyheclib">
 
 # pyheclib
 [![Python: Version](https://img.shields.io/badge/python-3.9|3.10|3.11|3.12|3.13-blue.svg)](#)
@@ -73,7 +73,7 @@ series = rts.to_series()                                      # pandas Series in
 window = dss_file.read("/DEMO/OUTLET/FLOW//1HOUR/OBS/", start="2020-01-15 12:00", end="2020-01-15 18:00")
 ```
 
-![Regular time series](assets/readme/regular_ts.png)
+![Regular time series](https://raw.githubusercontent.com/nzahasan/pyheclib/main/assets/readme/regular_ts.png)
 
 ### Irregular time series
 
@@ -90,7 +90,7 @@ its = dss_file.read("/DEMO/OUTLET/STAGE//IR-MONTH/OBS/")      # -> IrregularTs
 its.times, its.values, its.to_series()
 ```
 
-![Irregular time series](assets/readme/irregular_ts.png)
+![Irregular time series](https://raw.githubusercontent.com/nzahasan/pyheclib/main/assets/readme/irregular_ts.png)
 
 ### Paired data
 
@@ -108,7 +108,7 @@ pd_rec.n_curves, pd_rec.labels
 df = pd_rec.to_dataframe()                                    # index: x, one column per curve
 ```
 
-![Paired data](assets/readme/paired_data.png)
+![Paired data](https://raw.githubusercontent.com/nzahasan/pyheclib/main/assets/readme/paired_data.png)
 
 ### Gridded data
 
@@ -133,7 +133,7 @@ g = dss_file.read("/SHG/DEMO/PRECIP/15JAN2020:0000/15JAN2020:0600/RADAR/")   # -
 g.data.shape, g.cell_size, g.extent, g.lower_left_cell, g.start_time
 ```
 
-![Gridded data](assets/readme/gridded_data.png)
+![Gridded data](https://raw.githubusercontent.com/nzahasan/pyheclib/main/assets/readme/gridded_data.png)
 
 ### Pathnames and the catalog
 
@@ -216,7 +216,7 @@ Rules worth knowing:
 
 ## Tools
 
-Command-line tools in [`tools/`](tools):
+Command-line tools in [`tools/`](https://github.com/nzahasan/pyheclib/blob/main/tools):
 
 ```bash
 python3 tools/dss_browser.py file.dss [--port 8765] [--no-browser]   # browse a file in your web browser
@@ -227,19 +227,19 @@ python3 tools/dssrec2csv.py file.dss pathname out.csv                # export on
 The browser lets you filter records, view metadata, charts, grids and data, and download
 a record as csv. Each record has its own link (`/?path=/A/B/C/D/E/F/`).
 
-![dss browser](assets/readme/dss_browser.png)
+![dss browser](https://raw.githubusercontent.com/nzahasan/pyheclib/main/assets/readme/dss_browser.png)
 
 ## Examples and notebooks
 
-- [examples/example.dss](examples/example.dss) has every record type to try things on
+- [examples/example.dss](https://github.com/nzahasan/pyheclib/blob/main/examples/example.dss) has every record type to try things on
   (rebuild it with `python3 examples/make_example_dss.py`).
-- [examples/make_readme_figures.py](examples/make_readme_figures.py) draws the figures in this README.
+- [examples/make_readme_figures.py](https://github.com/nzahasan/pyheclib/blob/main/examples/make_readme_figures.py) draws the figures in this README.
 - Notebooks, each writes records, reads them back and checks the result:
-  [regular time series](notebooks/01_regular_timeseries.ipynb),
-  [irregular time series](notebooks/02_irregular_timeseries.ipynb),
-  [paired data](notebooks/03_paired_data.ipynb),
-  [gridded data](notebooks/04_gridded_data.ipynb),
-  [catalog, paths and delete](notebooks/05_catalog_paths_delete.ipynb).
+  [regular time series](https://github.com/nzahasan/pyheclib/blob/main/notebooks/01_regular_timeseries.ipynb),
+  [irregular time series](https://github.com/nzahasan/pyheclib/blob/main/notebooks/02_irregular_timeseries.ipynb),
+  [paired data](https://github.com/nzahasan/pyheclib/blob/main/notebooks/03_paired_data.ipynb),
+  [gridded data](https://github.com/nzahasan/pyheclib/blob/main/notebooks/04_gridded_data.ipynb),
+  [catalog, paths and delete](https://github.com/nzahasan/pyheclib/blob/main/notebooks/05_catalog_paths_delete.ipynb).
 
 ## Development
 

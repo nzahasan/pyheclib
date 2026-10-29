@@ -16,6 +16,6 @@ from .dsspath import DssPath
 from .records import RegularTs, IrregularTs, PairedData, GriddedData
 from .dssfile import open, DssFile
 
-__version__ = '0.4.0'
+__version__ = '0.4.1'
 
 set_message_level(1)

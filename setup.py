@@ -79,8 +79,14 @@ extension = [
 
 setup(
 	python_requires='>=3.9',
-	version='0.4.0',
+	version='0.4.1',
 	name='pyheclib',
+	description='Read and write HEC-DSS version 7 files from Python',
+	long_description=open(os.path.join(root, 'readme.md'), encoding='utf-8').read(),
+	long_description_content_type='text/markdown',
+	url='https://github.com/nzahasan/pyheclib',
+	project_urls={'Documentation': 'https://nzahasan.github.io/pyheclib'},
+	license='MIT',
 	packages=['pyheclib'],
 	package_data={'pyheclib': ['*.so', '*.dylib', '*.dll']},
 	install_requires=['numpy', 'pandas'],

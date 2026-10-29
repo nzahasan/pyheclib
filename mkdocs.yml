@@ -1,0 +1,53 @@
+site_name: pyheclib
+site_description: Read and write HEC-DSS version 7 files from Python
+site_url: https://nzahasan.github.io/pyheclib/
+repo_url: https://github.com/nzahasan/pyheclib
+repo_name: nzahasan/pyheclib
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  logo: images/dss-icon.svg
+  favicon: images/dss-icon.svg
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - search.highlight
+    - content.code.copy
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences
+
+nav:
+  - Home: index.md
+  - Getting started: getting-started.md
+  - Record types:
+      - Regular time series: records/regular-time-series.md
+      - Irregular time series: records/irregular-time-series.md
+      - Paired data: records/paired-data.md
+      - Gridded data: records/gridded-data.md
+  - Tools:
+      - DSS viewer: tools/dss-viewer.md
+      - Command line tools: tools/command-line-tools.md
+  - API reference: api-reference.md

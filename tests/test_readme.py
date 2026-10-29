@@ -23,7 +23,9 @@ def test_readme_examples_run(tmp_path, monkeypatch):
 
 
 def test_readme_images_exist():
-	images = [img for img in re.findall(r"!\[[^\]]*\]\(([^)]+)\)", README) if not img.startswith("http")]
-	assert len(images) == 5
+	# images use raw github links so they also show on pypi, they must exist in the repo
+	raw = "https://raw.githubusercontent.com/nzahasan/pyheclib/main/"
+	images = [img for img in re.findall(r"(?:!\[[^\]]*\]\(|src=\")([^)\"]+)", README) if img.startswith(raw)]
+	assert len(images) == 6
 	for image in images:
-		assert os.path.exists(os.path.join(ROOT, image)), image
+		assert os.path.exists(os.path.join(ROOT, image[len(raw):])), image

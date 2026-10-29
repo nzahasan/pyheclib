@@ -25,3 +25,4 @@ __pycache__
 #[build residue]
 *.egg-info
 .coverage
+site
