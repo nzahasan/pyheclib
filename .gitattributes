@@ -7,3 +7,5 @@
 *.so binary
 *.tar.gz binary
 *.pxd binary
+*.dylib binary
+*.dll binary

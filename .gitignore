@@ -1,19 +1,27 @@
 #[ignore build dirs & binary files]
 build
 dist
-pyheclib.*.so
-pyheclib.*.pyd
+.venv
+src/_core.c
+pyheclib/*.so
+pyheclib/*.pyd
+pyheclib/*.dylib
+pyheclib/*.dll
+heclib/windows/hecdss.lib
+heclib/windows/hecdss.exp
 
 #[ignore editor specific]
 .vscode
 
 #[ignore dss files]
 *.dss
+!examples/example.dss
 
 #[ignore tmp files]
 tmp
+.ipynb_checkpoints
+__pycache__
 
 #[build residue]
-tests/*.so
-tools/*.so
 *.egg-info
+.coverage
