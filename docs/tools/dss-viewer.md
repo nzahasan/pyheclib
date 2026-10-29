@@ -3,7 +3,9 @@
 The DSS viewer lets you look inside DSS files in your web browser. It runs on your own
 computer and needs nothing besides pyheclib.
 
-![DSS viewer](../images/dss_browser.png)
+![DSS viewer in light mode](../images/dss_browser_light.png)
+
+![DSS viewer in dark mode](../images/dss_browser.png)
 
 ## Get it
 

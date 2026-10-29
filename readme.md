@@ -4,6 +4,9 @@
 [![Python: Version](https://img.shields.io/badge/python-3.9|3.10|3.11|3.12|3.13-blue.svg)](#)
 [![Action: Test](https://github.com/nzahasan/pyheclib/actions/workflows/test.yml/badge.svg)](https://github.com/nzahasan/pyheclib/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Docs](https://img.shields.io/badge/docs-nzahasan.github.io%2Fpyheclib-blue.svg)](https://nzahasan.github.io/pyheclib)
+
+**Documentation: [nzahasan.github.io/pyheclib](https://nzahasan.github.io/pyheclib)**
 
 Read and write [HEC-DSS](https://www.hec.usace.army.mil/software/hec-dss/) files from Python.
 
@@ -229,7 +232,9 @@ The browser opens one or more files in tabs (or drag files onto the page). Searc
 text or by part (`B=GAGE C=FLOW*`), view metadata, statistics, a graph or table of the data,
 and download a record as csv. Each record has its own link (`/?file=1&path=/A/B/C/D/E/F/`).
 
-![dss browser](https://raw.githubusercontent.com/nzahasan/pyheclib/main/assets/readme/dss_browser.png)
+![dss browser, light mode](https://raw.githubusercontent.com/nzahasan/pyheclib/main/assets/readme/dss_browser_light.png)
+
+![dss browser, dark mode](https://raw.githubusercontent.com/nzahasan/pyheclib/main/assets/readme/dss_browser.png)
 
 ## Examples and notebooks
 
