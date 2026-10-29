@@ -212,6 +212,7 @@ Rules worth knowing:
 - Regular time series: the E part sets the interval. Irregular: E part starts with `IR-` or `~`.
 - Leave the D part empty to read a whole time series; use `start` / `end` for a window.
 - Missing values are `NaN` for all record types.
+- HEC-DSS log output is set by the `DSS_MESSAGE_LEVEL` environment variable (0 = none to 15 = debug); default and fallback is 1 (critical only).
 - Gridded `xll`, `yll` must line up with `origin` in whole multiples of `cell_size`.
 
 ## Tools
@@ -224,8 +225,9 @@ python3 tools/dss_catalog.py file.dss [filter] [--condensed]         # list reco
 python3 tools/dssrec2csv.py file.dss pathname out.csv                # export one record to csv
 ```
 
-The browser lets you filter records, view metadata, charts, grids and data, and download
-a record as csv. Each record has its own link (`/?path=/A/B/C/D/E/F/`).
+The browser opens one or more files in tabs (or drag files onto the page). Search records by
+text or by part (`B=GAGE C=FLOW*`), view metadata, statistics, a graph or table of the data,
+and download a record as csv. Each record has its own link (`/?file=1&path=/A/B/C/D/E/F/`).
 
 ![dss browser](https://raw.githubusercontent.com/nzahasan/pyheclib/main/assets/readme/dss_browser.png)
 

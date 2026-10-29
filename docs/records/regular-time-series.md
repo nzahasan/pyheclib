@@ -34,8 +34,8 @@ dss_file.write(precip)
 From a pandas Series with a time index:
 
 ```python
-hours = pd.date_range("2020-01-14 01:00", periods=96, freq="h")
-flow = pd.Series(np.linspace(40, 90, 96), index=hours)
+hours = pd.date_range("2020-01-14 01:00", periods=24*60, freq="h")   # 60 days of hourly data
+flow = pd.Series(np.linspace(40, 90, hours.size), index=hours)
 flow.iloc[70:76] = np.nan                     # missing values
 
 record = phl.RegularTs.from_series("/DEMO/OUTLET/FLOW//1HOUR/OBS/", flow,

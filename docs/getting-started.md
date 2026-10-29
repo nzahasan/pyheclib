@@ -90,3 +90,19 @@ dss_file.close()
 
 Missing values are `NaN` in every record type. pyheclib converts them to and from the
 DSS missing value for you.
+
+## Log messages
+
+The HEC-DSS library can print log messages. Set how much it prints with the
+`DSS_MESSAGE_LEVEL` environment variable before you import pyheclib:
+
+```bash
+export DSS_MESSAGE_LEVEL=3     # 0 prints nothing, 15 prints everything
+```
+
+If the variable is not set, or is not a whole number from 0 to 15, pyheclib uses 1,
+which prints only critical errors. You can also change it at any time in Python:
+
+```python
+phl.set_message_level(3)
+```

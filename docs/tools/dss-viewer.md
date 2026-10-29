@@ -41,12 +41,19 @@ Options:
 
 ## Use it
 
-- **Open files**: use the open button or drag a `.dss` file onto the page. Each file gets its own tab.
-- **Find records**: filter the list by text, by record type, or by pathname parts with `*`.
-- **View a record**: click a record to see its metadata, simple statistics, a chart
-  (or an image for grids) and a table of the data.
-- **Download**: save any record as a CSV file.
-- **Share a link**: each record has its own address, like `/?path=/A/B/C/D/E/F/`.
+- **Open files**: use the **Open** button, or drag `.dss` files onto the page. Each file gets its own tab.
+- **Find records**: type in the search box. Every word must match.
+    - A plain word matches anywhere in the pathname, like `FLOW` or `/OUTLET/FLOW/`.
+    - `B=GAGE` finds `GAGE` anywhere in part B. Add `*` or `?` to match the whole part instead, like `C=FLOW*` (FLOW, FLOW-PEAK but not STAGE-FLOW).
+    - The type menu shows only one record type, like regular time series or grids.
+- **View a record**: click a record to see its metadata and simple statistics. Switch between
+  **Graph** (a chart, or an image for grids) and **Table** to see the data.
+- **Download**: click **Download CSV** to save the record as a CSV file.
+- **Share a link**: each record has its own address, like `/?file=1&path=/A/B/C/D/E/F/`.
+- **Light or dark**: the button at the top right switches the theme. Your choice is remembered.
+- **Resize**: drag the line between the record list and the record to change their widths.
+
+Time series are listed once each, with their full date range, instead of once per block.
 
 If you stop the server, the page fades out. It reconnects when the server starts again.
 
