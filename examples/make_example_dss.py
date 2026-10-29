@@ -103,7 +103,7 @@ def irregular_ts(rain):
 	# water quality samples at seconds resolution
 	sample_times = pd.Timestamp("2020-01-01") + pd.to_timedelta(
 		np.sort(rng.choice(np.arange(0, 366 * 86400, 17), 36, replace=False)), unit="s")
-	temperature = 12 + 9 * np.sin(2 * np.pi * (sample_times.dayofyear - 110) / 366) + rng.normal(0, 0.4, sample_times.size)
+	temperature = 12 + 9 * np.sin(2 * np.pi * (sample_times.dayofyear.to_numpy() - 110) / 366) + rng.normal(0, 0.4, sample_times.size)
 
 	return [
 		phl.IrregularTs("/DEMO/OUTLET/STAGE//IR-MONTH/MANUAL/", times, stage.round(2), "FT", "INST-VAL"),

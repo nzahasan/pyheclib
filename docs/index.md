@@ -22,7 +22,7 @@ and pandas objects.
 pip install pyheclib
 ```
 
-Works on Python 3.10 or newer. Prebuilt packages are available for:
+Works on Python 3.8 or newer. Prebuilt packages are available for:
 
 - Linux (x86_64)
 - macOS (Apple Silicon, macOS 14 or newer)

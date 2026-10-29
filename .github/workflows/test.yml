@@ -15,6 +15,13 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        # python 3.8 & 3.9 are not available on the newest runner images
+        # (ubuntu 26.04, apple silicon macos), test them where they still exist
+        include:
+          - { os: ubuntu-24.04, python-version: "3.8" }
+          - { os: ubuntu-24.04, python-version: "3.9" }
+          - { os: windows-latest, python-version: "3.8" }
+          - { os: windows-latest, python-version: "3.9" }
 
     steps:
     - uses: actions/checkout@v4

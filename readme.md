@@ -1,7 +1,7 @@
 <img src="https://raw.githubusercontent.com/nzahasan/pyheclib/main/assets/pyheclib_banner.png" alt="pyheclib">
 
 # pyheclib
-[![Python: Version](https://img.shields.io/badge/python-3.10|3.11|3.12|3.13|3.14-blue.svg)](#)
+[![Python: Version](https://img.shields.io/badge/python-3.8|3.9|3.10|3.11|3.12|3.13|3.14-blue.svg)](#)
 [![Action: Test](https://github.com/nzahasan/pyheclib/actions/workflows/test.yml/badge.svg)](https://github.com/nzahasan/pyheclib/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Docs](https://img.shields.io/badge/docs-nzahasan.github.io%2Fpyheclib-blue.svg)](https://nzahasan.github.io/pyheclib)
@@ -24,7 +24,7 @@ Linux (x86_64), macOS (Apple Silicon, macOS 14+) and Windows (x64).
 pip install pyheclib
 ```
 
-Requires Python 3.10 or newer. Depends on `numpy` and `pandas`.
+Requires Python 3.8 or newer. Depends on `numpy` and `pandas`.
 
 ## Quick start
 
