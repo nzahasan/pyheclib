@@ -17,8 +17,12 @@ archs = ["x86_64"]
 manylinux-x86_64-image = "manylinux_2_28"
 
 [tool.cibuildwheel.macos]
-archs = ["x86_64", "arm64"]
-environment = { MACOSX_DEPLOYMENT_TARGET = "11.0" }
+archs = ["arm64"]
+# the bundled libhecdss.dylib requires macOS 14
+environment = { MACOSX_DEPLOYMENT_TARGET = "14.0" }
+# skip delocate: libhecdss.dylib is already bundled (rpath @loader_path) and its
+# @rpath/libz.1.dylib is the system zlib, which delocate can't find on disk
+repair-wheel-command = ""
 
 [tool.cibuildwheel.windows]
 archs = ["AMD64"]
