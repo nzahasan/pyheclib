@@ -78,7 +78,7 @@ extension = [
 ]
 
 setup(
-	python_requires='>=3.9',
+	python_requires='>=3.10',
 	version='0.4.1',
 	name='pyheclib',
 	description='Read and write HEC-DSS version 7 files from Python',
