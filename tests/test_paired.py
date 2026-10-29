@@ -1,51 +1,48 @@
-#!/usr/bin/env python3
-import pyheclib
-
 import numpy as np
-from datetime import datetime as dt,timedelta as delt 
+import pandas as pd
+import pytest
+import pyheclib as phl
+
+PATH = "/ALPHA/BETA/STAGE-FLOW///RATING/"
 
 
-paired_dss6 = pyheclib.hecdss("paired6.dss",version=6)
-paired_dss7 = pyheclib.hecdss("paired7.dss",version=7)
+def test_single_curve(dss):
+	x = np.arange(0, 100, 0.1)
+	y = np.sin(x)
+	dss.write(phl.PairedData(PATH, x, y, x_unit="FT", y_unit="CFS"))
+
+	out = dss.read(PATH)
+	assert isinstance(out, phl.PairedData)
+	assert out.n_curves == 1
+	np.testing.assert_allclose(out.x, x)
+	np.testing.assert_allclose(out.y[0], y)
+	assert (out.x_unit, out.y_unit) == ("FT", "CFS")
+
+	df = out.to_dataframe()
+	assert df.index.name == "STAGE" and list(df.columns) == ["FLOW"]
 
 
+def test_multi_curve_labels(dss):
+	x = np.linspace(0, 10, 11)
+	y = np.vstack([x, x ** 2, np.sqrt(x)])
+	y[1, 3] = np.nan
 
-x_data = np.arange(0,100,0.1)
-y_data = np.sin(x_data)
-	
+	dss.write(phl.PairedData(PATH, x, y, "FT", "CFS", "Linear", "Log", labels=["low", "mid", "high"]))
+	out = dss.read(PATH)
 
-
-pr = pyheclib.paired(
-	"/Alpha/Beta/Stage-Flow/Rating Table//Fempto",
-	x_data,
-	y_data,
-	"CFS",
-	"M"
-)
+	np.testing.assert_allclose(out.y, y)
+	assert out.labels == ["low", "mid", "high"]
+	assert out.y_type == "Log"
 
 
-# write
-paired_dss6.write(pr)
-paired_dss7.write(pr)
+def test_dataframe_roundtrip(dss):
+	df = pd.DataFrame({"a": [1.0, 2.0, 4.0], "b": [3.0, 5.0, 7.0]}, index=[0.0, 1.0, 2.0])
+	dss.write(phl.PairedData.from_dataframe(PATH, df, "FT", "CFS"))
+	out = dss.read(PATH).to_dataframe()
+	np.testing.assert_allclose(out.values, df.values)
+	assert list(out.columns) == ["a", "b"]
 
 
-# rec7 = paired_dss7.read("/Alpha/Beta/Stage-Flow/Rating Table//Fempto",pyheclib.record_type.PAIRED)
-# rec6 = paired_dss6.read("/Alpha/Beta/Stage-Flow/Rating Table//Fempto",pyheclib.record_type.PAIRED)
-
-# curves6 = rec6.data()
-# curves7 = rec7.data()
-
-
-
-
-
-
-
-
-paired_dss6.close()
-paired_dss7.close()
-
-
-
-
-# import pylab as pl 
+def test_shape_mismatch():
+	with pytest.raises(ValueError):
+		phl.PairedData(PATH, np.arange(5.0), np.arange(4.0))

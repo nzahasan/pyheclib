@@ -1,4 +1,5 @@
-cython
-numpy 
+cython>=3
+numpy
 pandas
+matplotlib
 pytest

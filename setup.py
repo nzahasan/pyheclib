@@ -1,77 +1,89 @@
 #!/usr/bin/env python3
-import os,sys,numpy
-# from distutils.core import setup
-from setuptools import setup
+import os, sys, shutil, numpy
+from setuptools import setup, Extension
+from setuptools.command.build_ext import build_ext
 from Cython.Build import cythonize
-from distutils.extension import Extension
 
 root = os.path.dirname(os.path.realpath(__file__))
+heclib = os.path.join(root, 'heclib')
 
 # platform dependent
-extra_objects_list = []
 library_dirs_list = []
+libraries_list = ['hecdss']
 compiler_arg_list = []
-libraries_list = []
+linker_arg_list = []
+shared_lib = None
 
 # platform independent
 macros_list = [("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION"),]
-include_dirs_list = [os.path.join(root,'heclib/headers'),numpy.get_include()]
-sources_list = ["src/pyheclib.pyx"]
+include_dirs_list = [os.path.join(heclib, 'include'), numpy.get_include()]
+sources_list = ["src/_core.pyx"]
 
-if sys.platform.lower()=='linux':
+if sys.platform.startswith('linux'):
 	print("*** Platform *** LINUX ***")
-	
-	extra_objects_list = [os.path.join(root,'heclib/linux/heclib.a')]
 
-	compiler_arg_list = [
-		# '-lgcc','-lm', '-ldl', '-lgfortran',
-		'-O0',
-		# disable warnings 
-		'-Wno-unused-but-set-variable',
-		'-Wno-unused-parameter', 
-		'-Wno-unused-variable',
-		'-Wno-uninitialized',
-		'-Wno-unused-function'
-	]
+	library_dirs_list = [os.path.join(heclib, 'linux')]
+	linker_arg_list = ['-Wl,-rpath,$ORIGIN']
+	shared_lib = os.path.join(heclib, 'linux', 'libhecdss.so')
 
-	libraries_list = ['gcc','m','dl','gfortran']
+elif sys.platform == 'darwin':
+	print("*** Platform *** MACOS ***")
 
-elif sys.platform.lower().startswith('win'):
+	library_dirs_list = [os.path.join(heclib, 'macos')]
+	# libhecdss.dylib links @rpath/libz.1.dylib, resolved from system /usr/lib
+	linker_arg_list = ['-Wl,-rpath,@loader_path', '-Wl,-rpath,/usr/lib']
+	shared_lib = os.path.join(heclib, 'macos', 'libhecdss.dylib')
 
-	# requires:
-	# * Intel fortran compiler
-	# * Microsoft visual c++ 14 build tools
-
+elif sys.platform.startswith('win'):
 	print("*** Platform *** WINDOWS ***")
 
+	# hecdss.lib (import library) is generated from hecdss.def at build time
+	library_dirs_list = [os.path.join(heclib, 'windows')]
+	shared_lib = os.path.join(heclib, 'windows', 'hecdss.dll')
 
-	extra_objects_list = [
-		os.path.join(root,'heclib\windows\Release64\heclib_c_v6v7.lib'),
-		os.path.join(root,'heclib\windows\Release64\heclib_f_v6v7.lib')
-	]
+else:
+	raise RuntimeError(f"Unsupported platform {sys.platform}")
 
-	library_dirs_list =[
-		# intel fortran compiler library location
-		'C:\\Program Files (x86)\\IntelSWTools\\compilers_and_libraries_2020\\windows\\compiler\\lib\\intel64_win'
-	]
 
+class build_ext_hecdss(build_ext):
+	''' bundles the hecdss shared library next to the extension module '''
+
+	def build_extensions(self):
+		if sys.platform.startswith('win'):
+			self.compiler.initialize()
+			win_dir = os.path.join(heclib, 'windows')
+			self.compiler.spawn([self.compiler.lib, '/nologo', '/machine:x64',
+				'/def:' + os.path.join(win_dir, 'hecdss.def'),
+				'/out:' + os.path.join(win_dir, 'hecdss.lib')])
+		super().build_extensions()
+
+	def run(self):
+		super().run()
+		for ext in self.extensions:
+			ext_dir = os.path.dirname(self.get_ext_fullpath(ext.name))
+			os.makedirs(ext_dir, exist_ok=True)
+			shutil.copy2(shared_lib, ext_dir)
 
 
 extension = [
-	Extension("pyheclib",
-		sources = sources_list, 
+	Extension("pyheclib._core",
+		sources = sources_list,
 		libraries = libraries_list,
 		define_macros = macros_list,
 		include_dirs = include_dirs_list,
 		library_dirs = library_dirs_list,
 		extra_compile_args = compiler_arg_list,
-		extra_objects = extra_objects_list,
+		extra_link_args = linker_arg_list,
 	),
 ]
 
 setup(
-    python_requires='>=3.6',
-	version='0.1.0',
-	name='build-pyheclib',
-	ext_modules= cythonize(extension,language_level='3'),
+	python_requires='>=3.9',
+	version='0.4.0',
+	name='pyheclib',
+	packages=['pyheclib'],
+	package_data={'pyheclib': ['*.so', '*.dylib', '*.dll']},
+	install_requires=['numpy', 'pandas'],
+	cmdclass={'build_ext': build_ext_hecdss},
+	ext_modules=cythonize(extension, language_level='3', include_path=['src']),
 )

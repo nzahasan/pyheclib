@@ -1,0 +1,2 @@
+include src/*.pyx src/*.pxd
+recursive-include heclib *

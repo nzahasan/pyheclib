@@ -1,0 +1,5 @@
+HEC-DSS C API (hecdss) 7-JA-7  -- DSS version 7 files only
+source: https://www.hec.usace.army.mil/nexus/repository/maven-public/mil/army/usace/hec/hecdss/7-JA-7-<classifier>/
+  macos/libhecdss.dylib   universal (darwin-aarch64 + darwin-x86_64)
+  linux/libhecdss.so      linux-x86_64
+  windows/hecdss.dll      win-x86_64 (hecdss.def generated from the dll export table)
