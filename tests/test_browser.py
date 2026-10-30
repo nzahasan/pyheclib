@@ -1,5 +1,7 @@
 ''' pyheclib/tools/dss_browser.py web server '''
 import os
+import socket
+import sys
 import threading
 import urllib.error
 import urllib.parse
@@ -197,3 +199,51 @@ def test_chart_helpers():
 
 	png = tool.grid_png(np.full((2, 2), np.nan))
 	assert png[:8] == b"\x89PNG\r\n\x1a\n"
+
+
+def occupy(count):
+	''' listening sockets on count ports in a row, the first port & the sockets '''
+	for _ in range(20):
+		first = socket.socket()
+		first.bind(("127.0.0.1", 0))
+		start, sockets = first.getsockname()[1], [first]
+		try:
+			for port in range(start + 1, start + count):
+				sock = socket.socket()
+				sockets.append(sock)
+				sock.bind(("127.0.0.1", port))
+			for sock in sockets:
+				sock.listen()
+			return start, sockets
+		except OSError:
+			for sock in sockets:
+				sock.close()
+	pytest.skip("no free ports in a row")
+
+
+def test_port_in_use_tries_next(capsys):
+	start, sockets = occupy(2)
+	try:
+		httpd = load_tool().make_server(port=start)
+		assert httpd.server_address[1] == start + 2
+		httpd.server_close()
+	finally:
+		for sock in sockets:
+			sock.close()
+	out = capsys.readouterr().out
+	assert f"port {start} is in use, trying {start + 1} (1/3)" in out
+	assert f"port {start + 1} is in use, trying {start + 2} (2/3)" in out
+
+
+def test_ports_in_use_abort(capsys, monkeypatch):
+	tool = load_tool()
+	start, sockets = occupy(tool.PORT_TRIES + 1)
+	monkeypatch.setattr(sys, "argv", ["dss_browser", "--no-browser", "--port", str(start)])
+	try:
+		assert tool.main() == 1
+	finally:
+		for sock in sockets:
+			sock.close()
+	out, err = capsys.readouterr()
+	assert out.count("is in use, trying") == 3 and f"(3/3)" in out
+	assert f"ports {start}-{start + 3} are not available, aborting" in err
