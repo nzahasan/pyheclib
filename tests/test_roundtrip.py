@@ -132,3 +132,13 @@ def test_delete_then_read(dss):
 		dss.read("/A/B/STAGE-FLOW///R/")
 	with pytest.raises(KeyError):
 		dss.delete("/A/B/STAGE-FLOW///R/")
+
+
+@pytest.mark.parametrize("code, message", [
+	(101, "not supported"), (111, "not supported"), (300, "not supported"),
+	(102, "not specified"), (299, "not specified"), (440, "not specified"), (999, "not specified"),
+])
+def test_unsupported_record_codes(dss, monkeypatch, code, message):
+	monkeypatch.setattr(dss, "record_type", lambda path: code)
+	with pytest.raises(ValueError, match=message):
+		dss.read("/A/B/C/D/E/F/")

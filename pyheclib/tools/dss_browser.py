@@ -35,6 +35,7 @@ import numpy as np
 import pandas as pd
 
 import pyheclib as phl
+from pyheclib.dssfile import REGULAR_TS, IRREGULAR_TS, PAIRED, GRID
 
 
 MAX_ROWS = 500          # catalog rows shown
@@ -43,10 +44,10 @@ MAX_CHART_POINTS = 2000
 PORT_TRIES = 3          # next ports tried when the port is in use
 
 RECORD_KINDS = {
-	"regular": ("Regular TS", lambda code: 100 <= code < 110),
-	"irregular": ("Irregular TS", lambda code: 110 <= code < 120),
-	"paired": ("Paired", lambda code: 200 <= code < 300),
-	"grid": ("Grid", lambda code: 400 <= code < 500),
+	"regular": ("Regular TS", lambda code: code in REGULAR_TS),
+	"irregular": ("Irregular TS", lambda code: code in IRREGULAR_TS),
+	"paired": ("Paired", lambda code: code in PAIRED),
+	"grid": ("Grid", lambda code: code in GRID),
 }
 
 # shadcn chart colors

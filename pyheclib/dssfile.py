@@ -27,6 +27,16 @@ MISSING_FLAGS = (MISSING, -901.0, -902.0)
 GRID_TYPE_CODES = {"UNDEFINED": 400, "HRAP": 410, "ALBERS": 420, "SPECIFIED": 430}
 GRID_DATA_TYPE_CODES = {"PER-AVER": 0, "PER-CUM": 1, "INST-VAL": 2, "INST-CUM": 3, "FREQ": 4}
 
+# record type codes, from hec_dss_recordType in hecdss.h
+REGULAR_TS = (100, 105)       # float, double
+IRREGULAR_TS = (110, 115)     # float, double
+TIME_SERIES = REGULAR_TS + IRREGULAR_TS
+PAIRED = (200, 205)           # float, double
+GRID = (400, 401, 410, 411, 420, 421, 430, 431)   # grid type, +1 without time reference
+
+# listed in hecdss.h but not supported by pyheclib
+UNSUPPORTED_TYPES = {101: "regular time series pattern", 111: "irregular time series pattern", 300: "text"}
+
 # D part of a condensed time series path, e.g. 01JAN2020-01MAR2020
 DATE_RANGE = re.compile(r"\d{2}[A-Za-z]{3}\d{4}-\d{2}[A-Za-z]{3}\d{4}")
 
@@ -99,8 +109,7 @@ class DssFile:
 
 		matches = []
 		for found, code in self.catalog(str(path.replace(D="*")), with_types=True):
-			is_time_series = 100 <= code < 120
-			if is_time_series and found.D:
+			if code in TIME_SERIES and found.D:
 				block_date = pd.to_datetime(found.D, format="%d%b%Y")
 				if not path.D or first <= block_date <= last:
 					matches.append(found)
@@ -123,7 +132,7 @@ class DssFile:
 		return matches
 
 	def record_type(self, path):
-		''' heclib record type code (105: regular ts, 115: irregular ts, 205: paired, 4xx: grid) '''
+		''' heclib record type code, see REGULAR_TS, IRREGULAR_TS, PAIRED & GRID '''
 		path = DssPath(path)
 
 		if path.D and not DATE_RANGE.fullmatch(path.D):
@@ -228,16 +237,18 @@ class DssFile:
 		path = DssPath(path)
 		code = self.record_type(path)
 
-		if 100 <= code < 110:
+		if code in REGULAR_TS:
 			return self._read_ts(path, start, end, RegularTs)
-		if 110 <= code < 120:
+		if code in IRREGULAR_TS:
 			return self._read_ts(path, start, end, IrregularTs)
-		if 200 <= code < 300:
+		if code in PAIRED:
 			return self._read_paired(path)
-		if 400 <= code < 500:
+		if code in GRID:
 			return self._read_gridded(path)
 
-		raise ValueError(f"Unsupported record type {code} for '{path}'")
+		if code in UNSUPPORTED_TYPES:
+			raise ValueError(f"Record type {code} ({UNSUPPORTED_TYPES[code]}) of '{path}' is not supported")
+		raise ValueError(f"Record type {code} of '{path}' is not specified in hecdss.h")
 
 	def _read_ts(self, path, start, end, record_class):
 		if (start is None) != (end is None):
@@ -337,8 +348,7 @@ def condense_catalog(entries):
 	condensed = {}   # path without date -> [code, block dates], keeps catalog order
 
 	for path, code in entries:
-		is_time_series = 100 <= code < 120
-		if is_time_series and path.D:
+		if code in TIME_SERIES and path.D:
 			key = path.without_date()
 			condensed.setdefault(key, [code, []])[1].append(path.D)
 		else:

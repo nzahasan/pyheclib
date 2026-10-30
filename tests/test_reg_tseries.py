@@ -62,6 +62,19 @@ def test_monthly_interval(dss):
 	np.testing.assert_allclose(out.values, [1.0, 2.0, 3.0])
 
 
+@pytest.mark.parametrize("e_part, start", [
+	("30SECOND", "2020-01-01 00:00:30"), ("SEMI-MONTH", "2020-01-16"), ("TRI-MONTH", "2020-01-11"),
+])
+def test_less_common_intervals(dss, e_part, start):
+	path = f"/A/B/FLOW//{e_part}/F/"
+	rts = phl.RegularTs(path, np.arange(7.0), start)
+	dss.write(rts)
+
+	out = dss.read(path).to_series()
+	assert out.index.equals(rts.times)
+	np.testing.assert_allclose(out.values, rts.values)
+
+
 def test_invalid_records():
 	with pytest.raises(ValueError):
 		phl.RegularTs("/A/B/C/", [1.0], "2020-01-01")

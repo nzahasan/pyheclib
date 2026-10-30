@@ -174,7 +174,7 @@ dss_file.close()
 
 ## Limitations
 
-- Quality flags are read when present, but not written.
+- Quality flags are read when present, but not written: the bundled HEC-DSS library (7-JA-7) drops them when storing.
 - Gridded data is always stored as `float32`.
 - Only DSS version 7 files.
 
@@ -208,11 +208,13 @@ DssPath(path) | DssPath.from_parts(A=, B=, C=, D=, E=, F=)
     .A .. .F  .parts()  .replace(**parts)  .without_date()
 ```
 
-Rules worth knowing:
+Notes:
 
 - `type` is one of `INST-VAL`, `INST-CUM`, `PER-AVER`, `PER-CUM`, `FREQ`.
 - `grid_type` is one of `UNDEFINED`, `HRAP`, `ALBERS`, `SPECIFIED`.
-- Regular time series: the E part sets the interval. Irregular: E part starts with `IR-` or `~`.
+- Regular time series: the E part sets the interval, one of the HEC-DSS standard intervals
+  (`1SECOND`..`30SECOND`, `1MINUTE`..`30MINUTE`, `1HOUR`..`12HOUR`, `1DAY`, `1WEEK`, `SEMI-MONTH`, `TRI-MONTH`, `1MONTH`, `1YEAR`).
+  Irregular: E part starts with `IR-` or `~`. Other E parts raise `ValueError`.
 - Leave the D part empty to read a whole time series; use `start` / `end` for a window.
 - Missing values are `NaN` for all record types.
 - HEC-DSS log output is set by the `DSS_MESSAGE_LEVEL` environment variable (0 = none to 15 = debug); default and fallback is 1 (critical only).
@@ -269,24 +271,14 @@ Code layout:
 
 ## Bundled HEC-DSS library
 
-pyheclib bundles the official HEC-DSS C API library (`hecdss`) version **7-JA-7**, built by
-the Hydrologic Engineering Center ([source code](https://github.com/HydrologicEngineeringCenter/hec-dss)).
-The binaries come unchanged from HEC's Maven repository,
-[`mil/army/usace/hec/hecdss/7-JA-7-<platform>`](https://www.hec.usace.army.mil/nexus/repository/maven-public/mil/army/usace/hec/hecdss/):
-
-| File | Platform | Package |
-|---|---|---|
-| `heclib/macos/libhecdss.dylib` | macOS, universal (arm64 + x86_64) | `7-JA-7-darwin-aarch64`, `7-JA-7-darwin-x86_64` |
-| `heclib/linux/libhecdss.so` | Linux x86_64 | `7-JA-7-linux-x86_64` |
-| `heclib/windows/hecdss.dll` | Windows x64 | `7-JA-7-win-x86_64` |
-
-`heclib/include/hecdss.h` is the matching header. `heclib/windows/hecdss.def` is generated from the
-dll's export table. The details are also in
+pyheclib ships HEC's official HEC-DSS C library (`hecdss`) **7-JA-7** for macOS, Linux and Windows,
+unchanged from [HEC's Maven repository](https://www.hec.usace.army.mil/nexus/repository/maven-public/mil/army/usace/hec/hecdss/)
+([source code](https://github.com/HydrologicEngineeringCenter/hec-dss)). Details are in
 [`heclib/version.txt`](https://github.com/nzahasan/pyheclib/blob/main/heclib/version.txt).
 
 ```python
-phl.__hecdss_version__   # '7-JA-7', the bundled library release
-phl.api_version()        # version reported by the hecdss C API
+phl.__hecdss_version__   # '7-JA-7'
+phl.api_version()        # version reported by the library
 ```
 
 ## Resources

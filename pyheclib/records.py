@@ -6,7 +6,6 @@
 	DssFile.read(path) returns the same record types.
 '''
 
-import re
 from dataclasses import dataclass, field
 from typing import List, Optional
 
@@ -34,20 +33,52 @@ def as_1d(values, name):
 	return values
 
 
+# the regular intervals (E part) heclib accepts
+REGULAR_INTERVALS = {
+	**{f"{n}SECOND": pd.Timedelta(seconds=n) for n in (1, 2, 3, 4, 5, 6, 10, 15, 20, 30)},
+	**{f"{n}MINUTE": pd.Timedelta(minutes=n) for n in (1, 2, 3, 4, 5, 6, 10, 12, 15, 20, 30)},
+	**{f"{n}HOUR": pd.Timedelta(hours=n) for n in (1, 2, 3, 4, 6, 8, 12)},
+	"1DAY": pd.Timedelta(days=1),
+	"1WEEK": pd.Timedelta(weeks=1),
+	"1MONTH": pd.DateOffset(months=1),
+	"1YEAR": pd.DateOffset(years=1),
+}
+
+# periods of these intervals start on fixed days of each month
+MONTH_SPLITS = {"SEMI-MONTH": (1, 16), "TRI-MONTH": (1, 11, 21)}
+
+
+def check_regular_interval(e_part):
+	if e_part.upper() not in REGULAR_INTERVALS and e_part.upper() not in MONTH_SPLITS:
+		raise ValueError(f"Unsupported regular interval '{e_part}', use one of "
+			f"{', '.join(list(REGULAR_INTERVALS) + list(MONTH_SPLITS))}")
+
+
+def check_irregular_interval(e_part):
+	if not e_part.upper().startswith(("IR-", "~")):
+		raise ValueError(f"Irregular E part must start with IR- or ~ (e.g. IR-MONTH), got '{e_part}'")
+
+
 def interval_offset(e_part):
 	''' regular interval E part (e.g. 15MINUTE, 1HOUR, 1MONTH) -> pandas offset '''
-	match = re.fullmatch(r"(\d+)(MINUTE|HOUR|DAY|WEEK|MONTH|YEAR)", e_part.upper())
-	if match is None:
-		raise ValueError(f"Unsupported regular interval '{e_part}'")
+	check_regular_interval(e_part)
+	if e_part.upper() in MONTH_SPLITS:
+		raise ValueError(f"'{e_part}' has no fixed offset, periods start on fixed days of each month")
+	return REGULAR_INTERVALS[e_part.upper()]
 
-	n, unit = int(match.group(1)), match.group(2)
 
-	if unit == "MONTH":
-		return pd.DateOffset(months=n)
-	if unit == "YEAR":
-		return pd.DateOffset(years=n)
+def regular_times(start, e_part, periods):
+	''' times of a regular series, start is the first time '''
+	days = MONTH_SPLITS.get(e_part.upper())
+	if days is None:
+		return pd.date_range(start, periods=periods, freq=interval_offset(e_part), name="Time")
 
-	return pd.Timedelta(**{unit.lower() + 's': n})
+	# period start days of enough months from the month before start
+	months = pd.date_range(start.normalize() - pd.offsets.MonthBegin(1),
+		periods=periods // len(days) + 2, freq="MS")
+	times = pd.DatetimeIndex([month + pd.Timedelta(days=day - 1) for month in months for day in days])
+	times = times + (start - start.normalize())
+	return times[times >= start][:periods].rename("Time")
 
 
 
@@ -69,13 +100,14 @@ class RegularTs:
 	type: str = "INST-VAL"
 	time_zone: str = ""
 	save_as_float: bool = False
-	quality: Optional[np.ndarray] = None   # only available when read
+	quality: Optional[np.ndarray] = None   # read from the file, the bundled heclib doesn't write it
 
 	def __post_init__(self):
 		self.path = DssPath(self.path)
 		self.values = as_1d(self.values, "values")
 		self.start = pd.Timestamp(self.start)
 		self.type = check_type(self.type)
+		check_regular_interval(self.interval)
 
 	@property
 	def interval(self):
@@ -83,8 +115,7 @@ class RegularTs:
 
 	@property
 	def times(self):
-		return pd.date_range(self.start, periods=self.values.size,
-							freq=interval_offset(self.interval), name="Time")
+		return regular_times(self.start, self.interval, self.values.size)
 
 	def to_series(self):
 		return pd.Series(self.values, index=self.times, name=self.path.C)
@@ -110,13 +141,14 @@ class IrregularTs:
 	type: str = "INST-VAL"
 	time_zone: str = ""
 	save_as_float: bool = False
-	quality: Optional[np.ndarray] = None   # only available when read
+	quality: Optional[np.ndarray] = None   # read from the file, the bundled heclib doesn't write it
 
 	def __post_init__(self):
 		self.path = DssPath(self.path)
 		self.values = as_1d(self.values, "values")
 		self.times = pd.DatetimeIndex(self.times, name="Time")
 		self.type = check_type(self.type)
+		check_irregular_interval(self.path.E)
 
 		if self.times.size != self.values.size:
 			raise ValueError("times and values size mismatch")

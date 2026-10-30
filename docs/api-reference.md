@@ -167,7 +167,12 @@ phl.RegularTs(path, values, start, unit="", type="INST-VAL", time_zone="", save_
 ```
 
 A time series with one value per fixed time step. The E part of the pathname sets the
-time step, like `15MINUTE`, `1HOUR`, `1DAY`, `1MONTH` or `1YEAR`.
+time step. Only the HEC-DSS standard intervals are accepted, any other E part raises `ValueError`:
+
+- `1SECOND`, `2SECOND`, `3SECOND`, `4SECOND`, `5SECOND`, `6SECOND`, `10SECOND`, `15SECOND`, `20SECOND`, `30SECOND`
+- `1MINUTE`, `2MINUTE`, `3MINUTE`, `4MINUTE`, `5MINUTE`, `6MINUTE`, `10MINUTE`, `12MINUTE`, `15MINUTE`, `20MINUTE`, `30MINUTE`
+- `1HOUR`, `2HOUR`, `3HOUR`, `4HOUR`, `6HOUR`, `8HOUR`, `12HOUR`
+- `1DAY`, `1WEEK`, `SEMI-MONTH` (periods start on the 1st and 16th), `TRI-MONTH` (1st, 11th and 21st), `1MONTH`, `1YEAR`
 
 | Parameter | Type | Description |
 |---|---|---|
@@ -369,6 +374,6 @@ The `type` option of time series and gridded records is one of:
 ### Other rules
 
 - Missing values are `NaN` in every record type.
-- Regular time series: the E part sets the time step. Irregular: the E part starts with `IR-` or `~`.
+- Regular time series: the E part sets the time step and must be a [standard interval](#regularts). Irregular: the E part starts with `IR-` or `~`.
 - Leave the D part empty to read a whole time series. Use `start` and `end` for part of it.
 - Quality flags are read when present, but not written.

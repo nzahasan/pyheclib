@@ -19,11 +19,27 @@ def test_regular_times_from_interval(e_part, second):
 	assert rts.times.size == 3 and rts.times.name == "Time"
 
 
+@pytest.mark.parametrize("e_part, times", [
+	("1SECOND", ["2020-01-01 00:00:00", "2020-01-01 00:00:01", "2020-01-01 00:00:02", "2020-01-01 00:00:03"]),
+	("SEMI-MONTH", ["2020-01-16", "2020-02-01", "2020-02-16", "2020-03-01"]),
+	("TRI-MONTH", ["2020-01-21", "2020-02-01", "2020-02-11", "2020-02-21"]),
+])
+def test_regular_times_any_interval(e_part, times):
+	start = times[0]
+	rts = phl.RegularTs(f"/A/B/C//{e_part}/F/", [1.0, 2.0, 3.0, 4.0], start)
+	assert rts.times.equals(pd.DatetimeIndex(times, name="Time"))
+
+
 def test_unsupported_interval():
 	with pytest.raises(ValueError):
 		interval_offset("IR-MONTH")
-	with pytest.raises(ValueError):
-		phl.RegularTs("/A/B/C//SEMI-MONTH/F/", [1.0], "2020-01-01").times
+	for e_part in ("IR-MONTH", "15MIN", "7HOUR", "2DAY"):        # heclib rejects these
+		with pytest.raises(ValueError):
+			phl.RegularTs(f"/A/B/C//{e_part}/F/", [1.0], "2020-01-01")
+	for e_part in ("1HOUR", "1DAY"):                            # irregular needs IR- or ~
+		with pytest.raises(ValueError):
+			phl.IrregularTs(f"/A/B/C//{e_part}/F/", ["2020-01-01"], [1.0])
+	phl.IrregularTs("/A/B/C//~1DAY/F/", ["2020-01-01"], [1.0])
 
 
 def test_regular_ts_fields():
