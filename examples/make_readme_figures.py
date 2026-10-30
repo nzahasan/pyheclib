@@ -17,6 +17,7 @@ import tempfile
 
 import matplotlib
 matplotlib.use("Agg")
+import matplotlib.font_manager as font_manager
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import numpy as np
@@ -25,37 +26,26 @@ import pandas as pd
 import pyheclib as phl
 
 
-# a quiet light style, like the dss browser: white, no box, faint grid lines
-INK, MUTED, FAINT = "#18181b", "#71717a", "#e4e4e7"
-COLORS = ["#e76e50", "#2a9d90", "#274754", "#e8c468"]   # the browser chart colors
+# IBM Plex like the dss browser (https://github.com/IBM/plex), matplotlib caches its
+# font list, so register plex files installed after that
+for font_file in font_manager.findSystemFonts():
+	if os.path.basename(font_file).startswith("IBMPlex"):
+		font_manager.fontManager.addfont(font_file)
 
+# ggplot style with the IBM Plex fonts
+INK, MUTED = "#222222", "#555555"
+COLORS = ["#E24A33", "#348ABD", "#988ED5", "#777777", "#FBC15E", "#8EBA42"]   # the ggplot colors
+
+plt.style.use("ggplot")
 plt.rcParams.update({
 	"font.family": "sans-serif",
-	"font.sans-serif": ["Arial", "Liberation Sans", "DejaVu Sans"],   # fonts with a real bold
+	"font.sans-serif": ["IBM Plex Sans", "Arial", "DejaVu Sans"],
 	"font.monospace": ["IBM Plex Mono", "JetBrains Mono", "Menlo", "Consolas", "DejaVu Sans Mono"],
 	"font.size": 10,
-	"text.color": INK,
-	"axes.prop_cycle": plt.cycler(color=COLORS),
-	"axes.edgecolor": FAINT,
-	"axes.labelcolor": MUTED,
 	"axes.labelsize": 10,
-	"axes.labelpad": 8,
-	"axes.spines.top": False,
-	"axes.spines.right": False,
-	"axes.spines.left": False,
-	"axes.grid": True,
-	"axes.grid.axis": "y",
-	"axes.axisbelow": True,
-	"grid.color": FAINT,
-	"grid.linewidth": 0.8,
-	"xtick.color": MUTED,
-	"ytick.color": MUTED,
-	"xtick.major.size": 4,
-	"xtick.major.width": 0.8,
-	"ytick.major.size": 0,
-	"legend.frameon": False,
 	"legend.fontsize": 9,
-	"figure.facecolor": "white",
+	"legend.frameon": True,
+	"legend.facecolor": "white",
 	"figure.dpi": 100,
 	"savefig.dpi": 200,
 	"savefig.bbox": "tight",
@@ -136,7 +126,7 @@ def example_records():
 def title(ax, name, path):
 	''' the record type, with the dss pathname below it in a smaller mono font '''
 	ax.annotate(name, (0, 1), xycoords="axes fraction", xytext=(0, 34), textcoords="offset points",
-		fontsize=14, fontweight="bold", color=INK, va="bottom")
+		fontsize=14, fontweight="semibold", color=INK, va="bottom")
 	ax.annotate(path, (0, 1), xycoords="axes fraction", xytext=(0, 16), textcoords="offset points",
 		fontsize=9, family="monospace", color=MUTED, va="bottom")
 
@@ -146,16 +136,15 @@ def plot_regular_ts(flow, precip, out_file):
 		gridspec_kw={"height_ratios": [1, 2.4], "hspace": 0.06})
 
 	rain = precip.to_series()
-	ax_rain.bar(rain.index - pd.Timedelta(hours=12), rain.values, width=0.8, color=COLORS[2])
+	ax_rain.bar(rain.index - pd.Timedelta(hours=12), rain.values, width=0.85, color=COLORS[1])
 	ax_rain.invert_yaxis()
-	ax_rain.tick_params(axis="x", length=0)
 	ax_rain.set_ylabel(f"Rainfall ({precip.unit})")
 	title(ax_rain, "Regular time series", f"{flow.path.without_date()}  &  {precip.path.without_date()}")
 
 	q = flow.to_series()
-	ax_flow.plot(q.index, q.values, color=COLORS[0], lw=1.2, label=f"Flow, {flow.interval} {flow.type}")
+	ax_flow.plot(q.index, q.values, color=COLORS[0], lw=1.1, label=f"Flow, {flow.interval} {flow.type}")
 	gap = q[q.isna()]
-	ax_flow.axvspan(gap.index[0], gap.index[-1], color=FAINT, alpha=0.8, lw=0, label="missing values (NaN)")
+	ax_flow.axvspan(gap.index[0], gap.index[-1], color="0.6", alpha=0.35, lw=0, label="missing values (NaN)")
 	ax_flow.set_ylabel(f"Flow ({flow.unit})")
 	ax_flow.legend(loc="upper right")
 	ax_flow.xaxis.set_major_formatter(mdates.DateFormatter("%d %b"))
@@ -168,8 +157,8 @@ def plot_irregular_ts(stage, out_file):
 	fig, ax = plt.subplots(figsize=(10, 3.6))
 
 	s = stage.to_series()
-	ax.plot(s.index, s.values, color=COLORS[1], lw=1, alpha=0.45)
-	ax.scatter(s.index, s.values, s=30, color=COLORS[1], edgecolor="white", linewidth=1, zorder=3,
+	ax.plot(s.index, s.values, color=COLORS[2], lw=1, alpha=0.6)
+	ax.scatter(s.index, s.values, s=30, color=COLORS[2], edgecolor="white", linewidth=1, zorder=3,
 		label=f"{s.size} readings at irregular times")
 	ax.set_ylabel(f"Stage ({stage.unit})")
 	title(ax, "Irregular time series", stage.path.without_date())
@@ -187,7 +176,6 @@ def plot_paired(rating, out_file):
 	for label in df.columns:
 		ax.plot(df[label].values, df.index.values, lw=2, label=label)
 
-	ax.grid(True, axis="both")
 	ax.set_xlabel(f"Flow ({rating.y_unit})")
 	ax.set_ylabel(f"Stage ({rating.x_unit})")
 	title(ax, "Paired data", rating.path)
@@ -201,24 +189,21 @@ def plot_paired(rating, out_file):
 def plot_gridded(grid, out_file):
 	fig, ax = plt.subplots(figsize=(8.4, 5))
 	ax.grid(False)
-	ax.spines[:].set_visible(False)
-	ax.tick_params(axis="both", length=0)
 
 	xmin, xmax, ymin, ymax = (v / 1000 for v in grid.extent)
 	cmap = plt.get_cmap("viridis").copy()
-	cmap.set_bad("#f4f4f5")
+	cmap.set_bad("0.85")
 	image = ax.imshow(grid.data, extent=(xmin, xmax, ymin, ymax), cmap=cmap, origin="upper")
 
 	bar = fig.colorbar(image, ax=ax, fraction=0.035, pad=0.02)
 	bar.outline.set_visible(False)
-	bar.ax.tick_params(length=0)
 	bar.set_label(f"{grid.type} ({grid.unit})")
 	ax.set_xlabel(f"x ({grid.srs_name}, km)")
 	ax.set_ylabel(f"y ({grid.srs_name}, km)")
 	title(ax, "Gridded data", grid.path)
 	ax.text(0.015, 0.975, f"{grid.shape[0]} x {grid.shape[1]} cells of {grid.cell_size / 1000:g} km\n"
-		"light grey = nodata (NaN)", transform=ax.transAxes, fontsize=8, va="top", color=MUTED,
-		bbox={"facecolor": "white", "edgecolor": FAINT, "boxstyle": "round,pad=0.5"})
+		"grey = nodata (NaN)", transform=ax.transAxes, fontsize=8, va="top", color=MUTED,
+		bbox={"facecolor": "white", "edgecolor": "0.7", "boxstyle": "round,pad=0.5"})
 
 	fig.savefig(out_file)
 	plt.close(fig)

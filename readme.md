@@ -182,7 +182,7 @@ dss_file.close()
 
 A compact summary of the API, useful for scripts and AI coding agents.
 
-```text
+```py
 import pyheclib as phl
 
 phl.open(filename) -> DssFile                 # creates the file if missing; context manager

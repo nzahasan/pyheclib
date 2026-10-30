@@ -10,6 +10,7 @@ README = open(os.path.join(ROOT, "readme.md")).read()
 
 
 def test_readme_examples_run(tmp_path, monkeypatch):
+	# ```python blocks run, the ```py quick reference only lists signatures
 	blocks = re.findall(r"```python\n(.*?)```", README, re.S)
 	assert len(blocks) >= 6
 
