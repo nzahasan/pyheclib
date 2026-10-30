@@ -63,7 +63,8 @@ def post(server, url, body=b"", **query):
 def test_page(server):
 	status, content_type, body = get(server, "/")
 	assert status == 200 and content_type.startswith("text/html")
-	assert b"htmx.org" in body and b'hx-get="/catalog"' in body and b"--background" in body
+	assert b"htmx.org" in body and b'hx-get="/catalog"' in body and b"--background" in body and b"--brand-soft" in body
+	assert b"uplot@" in body and b'id="cdn-warning"' in body and body.count(b"onerror=\"cdnFailed(") == 4
 	assert b"IBM+Plex+Sans" in body and b"IBM+Plex+Mono" in body
 	assert b'id="offline"' in body and b'fetch("/ping"' in body
 	assert b"h-screen" in body and b"overflow-hidden" in body
@@ -144,9 +145,9 @@ def test_catalog_filters(server):
 
 
 @pytest.mark.parametrize("path, expected", [
-	(FLOW, ["RegularTs", "<svg", "<polyline", "1HOUR", "Missing"]),
-	(STAGE, ["IrregularTs", "<circle", "2020-01-02 04:05:06"]),
-	(RATING, ["PairedData", "<polyline", "a, b", "FLOW (CFS)"]),
+	(FLOW, ["RegularTs", 'class="chart"', "&quot;time&quot;: true", "null", "1HOUR", "Missing"]),
+	(STAGE, ["IrregularTs", "&quot;points&quot;: true", "2020-01-02 04:05:06"]),
+	(RATING, ["PairedData", "&quot;points&quot;: false", "a, b", "FLOW (CFS)", "&quot;label&quot;: &quot;b&quot;"]),
 	(GRID, ["GriddedData", "/grid.png?file=1&path=", "ALBERS", "3 x 4"]),
 ])
 def test_record_views(server, path, expected):
@@ -189,7 +190,8 @@ def test_unknown_url(server):
 
 def test_chart_helpers():
 	tool = load_tool()
-	assert tool.nice_ticks(0, 10) == [0, 2, 4, 6, 8, 10]
+	assert tool.json_values([1.0, np.nan]) == [1.0, None]
+	assert "no values to plot" in tool.line_chart([("a", np.arange(2.0), np.full(2, np.nan))])
 
 	x = np.arange(10000.0)
 	y = np.sin(x / 100)

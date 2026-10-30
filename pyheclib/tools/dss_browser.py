@@ -5,11 +5,13 @@
 	    dss_browser [file.dss ...] [--port 8765] [--no-browser]
 
 	A single file tool using the python built in http server. The page uses
-	htmx for interaction and shadcn/ui styling (tailwind + shadcn theme
-	tokens). More files can be opened from the page (open button or drag &
-	drop), every open file gets a tab. Records are shown as a graph (svg
-	charts, png images for grids) and as a table, every record can be
-	downloaded as csv.
+	htmx for interaction, shadcn/ui styling (tailwind + shadcn theme tokens,
+	with the fluent ui brand blues for selection, tags & tabs) & uplot charts,
+	all loaded from cdns, a warning shows when one of them can not be loaded.
+	More files can be opened from the page (open button or drag & drop),
+	every open file gets a tab. Records are shown as a graph (uplot charts,
+	png images for grids) and as a table, every record can be downloaded as
+	csv.
 
 	The file reads top to bottom: page templates, html helpers, charts, the
 	views of a file, the http server & the svg icons at the end.
@@ -20,6 +22,7 @@ import errno
 import fnmatch
 import html
 import io
+import json
 import math
 import os
 import shutil
@@ -40,8 +43,11 @@ from pyheclib.dssfile import REGULAR_TS, IRREGULAR_TS, PAIRED, GRID
 
 MAX_ROWS = 500          # catalog rows shown
 MAX_TABLE_ROWS = 100    # data rows shown in the record view
-MAX_CHART_POINTS = 2000
+MAX_CHART_POINTS = 5000
 PORT_TRIES = 3          # next ports tried when the port is in use
+
+UPLOT_URL = "https://unpkg.com/uplot@1.6.32/dist/uPlot.iife.min.js"
+UPLOT_CSS_URL = "https://unpkg.com/uplot@1.6.32/dist/uPlot.min.css"
 
 RECORD_KINDS = {
 	"regular": ("Regular TS", lambda code: code in REGULAR_TS),
@@ -72,31 +78,40 @@ PAGE = '''<!doctype html>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/htmx.org@2.0.4"></script>
-<script src="https://cdn.tailwindcss.com"></script>
 <script>{head_script}</script>
 <style>{style}</style>
+<link rel="stylesheet" href="{uplot_css_url}" onerror="cdnFailed('uPlot')">
+<script src="https://unpkg.com/htmx.org@2.0.4" onerror="cdnFailed('htmx')"></script>
+<script src="https://cdn.tailwindcss.com" onerror="cdnFailed('Tailwind')"></script>
+<script>if (window.tailwind) tailwind.config = TAILWIND_CONFIG;</script>
+<script src="{uplot_url}" onerror="cdnFailed('uPlot')"></script>
 </head>
 <body data-file="{file_id}" class="flex h-screen flex-col overflow-hidden bg-background text-foreground antialiased">
+<div id="cdn-warning" role="alert" hidden></div>
 <header class="shrink-0 border-b">
 	<div class="flex h-14 items-center gap-3 px-6">
 		<div class="flex shrink-0 items-center gap-2 font-semibold tracking-tight">{logo_icon}DSS BROWSER</div>
 		<nav class="flex min-w-0 items-center gap-1 overflow-x-auto rounded-lg bg-muted p-1 text-muted-foreground">{file_tabs}
 			<button type="button" onclick="picker.click()" title="open dss files, or drop them on the page"
-				class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium hover:text-foreground">{open_icon}Open</button>
+				class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium text-brand hover:bg-background">{open_icon}Open</button>
 		</nav>
 		<input id="picker" type="file" accept=".dss" multiple hidden onchange="openFiles(this.files)">
 		<span class="ml-auto shrink-0 text-xs text-muted-foreground">pyheclib <span class="font-mono">{version}</span></span>
 		<button type="button" onclick="toggleTheme()" title="toggle dark / light theme"
-			class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border text-muted-foreground shadow-sm hover:bg-accent hover:text-foreground">
+			class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border text-brand shadow-sm hover:bg-accent">
 			<span class="dark:hidden">{moon_icon}</span><span class="hidden dark:inline">{sun_icon}</span></button>
 	</div>
 </header>
 {body}
 
-<div id="drop" class="fixed inset-4 z-40 hidden items-center justify-center rounded-md border-2 border-dashed border-foreground/40 bg-background/70 backdrop-blur-sm">
-	<div class="flex flex-col items-center gap-3">{upload_icon}
-		<div id="drop-text" class="font-semibold tracking-tight">Drop dss files to open them</div></div>
+<div id="drop" class="fixed inset-4 z-40 hidden items-center justify-center rounded-md border-2 border-dashed border-brand bg-background/80">
+	<div class="flex flex-col items-center gap-3 text-brand">{upload_icon}
+		<div class="font-semibold tracking-tight">Drop dss files to open them</div></div>
+</div>
+<div id="opening" class="pointer-events-none fixed inset-0 z-40 hidden items-center justify-center">
+	<div class="flex items-center gap-3 rounded-md border bg-card px-5 py-4 text-sm font-medium shadow-lg">
+		<span class="h-5 w-5 animate-spin rounded-full border-2 border-brand border-t-transparent"></span>
+		<span id="opening-text">Opening...</span></div>
 </div>
 <div id="offline" class="fixed inset-0 z-50 hidden items-center justify-center bg-background/40 backdrop-blur-sm">
 	<div class="rounded-md border bg-card p-6 text-center shadow-lg">
@@ -136,50 +151,74 @@ NO_FILE_BODY = '''<main class="flex min-h-0 flex-1 items-center justify-center p
 		<div class="font-semibold tracking-tight">No file open</div>
 		<p class="text-sm text-muted-foreground">Drop dss files here, or</p>
 		<button type="button" onclick="picker.click()"
-			class="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90">{open_icon}Open file</button>
+			class="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow hover:opacity-90">{open_icon}Open file</button>
 	</div>
 </main>'''
 
 STYLE = '''
 :root {
 	--background: 0 0% 100%; --foreground: 240 10% 3.9%; --card: 0 0% 100%; --card-foreground: 240 10% 3.9%;
-	--primary: 240 5.9% 10%; --primary-foreground: 0 0% 98%; --secondary: 240 4.8% 95.9%;
+	--secondary: 240 4.8% 95.9%;
 	--secondary-foreground: 240 5.9% 10%; --muted: 240 4.8% 95.9%; --muted-foreground: 240 3.8% 46.1%;
 	--accent: 240 4.8% 95.9%; --accent-foreground: 240 5.9% 10%; --border: 240 5.9% 90%;
 	--input: 240 5.9% 90%; --ring: 240 5.9% 10%; --radius: 0.5rem;
-	--selection: #0063e1;   /* macos selected row blue */
+	/* fluent ui brand colors: buttons, selected row, its light accent for hover, tags & the active tab */
+	--brand: #0f6cbd; --brand-soft: #ebf3fc; --brand-text: #115ea3; --brand-stroke: #b4d6fa; --brand-line: #0f6cbd;
 	color-scheme: light;
 }
 .dark {
 	--background: 240 10% 3.9%; --foreground: 0 0% 98%; --card: 240 10% 3.9%; --card-foreground: 0 0% 98%;
-	--primary: 0 0% 98%; --primary-foreground: 240 5.9% 10%; --secondary: 240 3.7% 15.9%;
+	--secondary: 240 3.7% 15.9%;
 	--secondary-foreground: 0 0% 98%; --muted: 240 3.7% 15.9%; --muted-foreground: 240 5% 64.9%;
 	--accent: 240 3.7% 15.9%; --accent-foreground: 0 0% 98%; --border: 240 3.7% 15.9%;
 	--input: 240 3.7% 15.9%; --ring: 240 4.9% 83.9%;
-	--selection: #0058d0;
+	--brand: #115ea3; --brand-soft: #082338; --brand-text: #62abf5; --brand-stroke: #0e4775; --brand-line: #479ef5;
 	color-scheme: dark;
 }
-body { font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif; }
+body { font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif; margin: 0; }
+#cdn-warning { padding: 8px 24px; font-size: 13px; background: #fff4ce; color: #4d3b00; border-bottom: 1px solid #f9e2ae; }
 .htmx-indicator { opacity: 0; transition: opacity 200ms; }
 .htmx-request .htmx-indicator, .htmx-request.htmx-indicator { opacity: 1; }
-tr.selected, tr.selected:hover { background: var(--selection); color: #fff; }
-tr.selected .badge { background: rgb(255 255 255 / 0.2); color: #fff; }
+tr.catalog-row:hover { background: var(--brand-soft); }
+tr.selected, tr.selected:hover { background: var(--brand); color: #fff; }
+.badge-brand { background: var(--brand-soft); color: var(--brand-text); border: 1px solid var(--brand-stroke); }
+tr.selected .badge { background: rgb(255 255 255 / 0.2); color: #fff; border-color: transparent; }
 thead th { box-shadow: inset 0 -1px 0 hsl(var(--border)); }   /* collapsed borders do not move with sticky headers */
+[role="option"]:hover { background: var(--brand-soft); }   /* same as the catalog rows */
+[role="option"][aria-checked="true"] { color: var(--brand-line); }
 [role="option"][aria-checked="false"] .check { visibility: hidden; }
-[aria-selected="true"] { background: hsl(var(--background)); color: hsl(var(--foreground)); box-shadow: 0 1px 2px rgb(0 0 0 / 0.08); }
+[aria-selected="true"] { background: hsl(var(--background)); color: var(--brand-line); box-shadow: inset 0 0 0 1px var(--brand-line), 0 1px 2px rgb(0 0 0 / 0.08); }   /* inset: the border takes no room */
+.uplot { font-family: inherit; width: 100% !important; }
+.uplot .u-legend { font-size: 12px; color: hsl(var(--foreground)); }
+.uplot .u-legend .u-value { font-family: "IBM Plex Mono", ui-monospace, monospace; }   /* values under the cursor */
 '''
 
-# runs before the first paint
+# runs before the first paint & before the cdn scripts
 HEAD_SCRIPT = '''
 // theme: saved choice, else the system setting
 if ((localStorage.getItem("dss-theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")) === "dark")
 	document.documentElement.classList.add("dark");
 
+// cdn scripts & styles that can not be loaded, shown in the warning bar at the top
+const missing = [];
+function cdnFailed(name) {
+	if (!missing.includes(name)) missing.push(name);
+	showMissing();
+}
+function showMissing() {
+	const bar = document.getElementById("cdn-warning");
+	if (!bar || !missing.length) return;
+	bar.textContent = `Unable to load ${missing.join(", ")} from the CDN, the page may not look or work right. `
+		+ "Check the internet connection and reload the page.";
+	bar.hidden = false;
+}
+document.addEventListener("DOMContentLoaded", showMissing);
+
 // shadcn colors from the theme tokens in the style
-tailwind.config = { darkMode: "class", theme: { extend: { colors: {
+const TAILWIND_CONFIG = { darkMode: "class", theme: { extend: { colors: {
 	border: "hsl(var(--border))", input: "hsl(var(--input))", ring: "hsl(var(--ring))",
 	background: "hsl(var(--background))", foreground: "hsl(var(--foreground))",
-	primary: { DEFAULT: "hsl(var(--primary))", foreground: "hsl(var(--primary-foreground))" },
+	primary: { DEFAULT: "var(--brand)", foreground: "#fff" }, brand: "var(--brand-line)",
 	secondary: { DEFAULT: "hsl(var(--secondary))", foreground: "hsl(var(--secondary-foreground))" },
 	muted: { DEFAULT: "hsl(var(--muted))", foreground: "hsl(var(--muted-foreground))" },
 	accent: { DEFAULT: "hsl(var(--accent))", foreground: "hsl(var(--accent-foreground))" },
@@ -196,6 +235,7 @@ const currentFile = document.body.dataset.file;
 function toggleTheme() {
 	const dark = document.documentElement.classList.toggle("dark");
 	localStorage.setItem("dss-theme", dark ? "dark" : "light");
+	drawCharts();
 }
 
 // drag the divider to size the catalog & record sides, kept as a percentage
@@ -233,24 +273,35 @@ function markSelected() {
 }
 document.addEventListener("htmx:afterSwap", event => { if (event.target.id === "catalog") markSelected(); });
 
-// open files: upload them, the server opens a copy
-const drop = document.getElementById("drop");
-function showDrop(visible, text = "Drop dss files to open them") {
-	document.getElementById("drop-text").textContent = text;
-	drop.classList.toggle("hidden", !visible);
-	drop.classList.toggle("flex", visible);
+// copy the full pathname of the record, a check shows for a moment
+async function copyPath(button) {
+	await navigator.clipboard.writeText(button.dataset.path);
+	const [copy, done] = button.querySelectorAll("svg");
+	copy.classList.add("hidden"); done.classList.remove("hidden");
+	setTimeout(() => { copy.classList.remove("hidden"); done.classList.add("hidden"); }, 1200);
 }
+
+// show or hide an overlay
+function show(element, visible) {
+	element.classList.toggle("hidden", !visible);
+	element.classList.toggle("flex", visible);
+}
+
+// open files: upload them, the server opens a copy, a spinner shows until the page of the file loads
+const drop = document.getElementById("drop");
+const opening = document.getElementById("opening");
 async function openFiles(files) {
 	let opened = null;
 	for (const file of files) {
-		showDrop(true, `Opening ${file.name}...`);
+		document.getElementById("opening-text").textContent = `Opening ${file.name}...`;
+		show(opening, true);
 		const response = await fetch("/open?name=" + encodeURIComponent(file.name), { method: "POST", body: file });
 		const text = await response.text();
 		if (response.ok) opened = text;
 		else alert(`Unable to open ${file.name}\\n${text}`);
 	}
-	showDrop(false);
 	if (opened !== null) location = "/?file=" + opened;
+	else show(opening, false);
 }
 async function closeFile(id) {
 	await fetch("/close?file=" + id, { method: "POST" });
@@ -260,16 +311,16 @@ async function closeFile(id) {
 
 let dragDepth = 0;
 document.addEventListener("dragenter", event => {
-	if (event.dataTransfer.types.includes("Files") && ++dragDepth === 1) showDrop(true);
+	if (event.dataTransfer.types.includes("Files") && ++dragDepth === 1) show(drop, true);
 });
 document.addEventListener("dragleave", () => {
-	if (dragDepth > 0 && --dragDepth === 0) showDrop(false);
+	if (dragDepth > 0 && --dragDepth === 0) show(drop, false);
 });
 document.addEventListener("dragover", event => event.preventDefault());
 document.addEventListener("drop", event => {
 	event.preventDefault();
 	dragDepth = 0;
-	showDrop(false);
+	show(drop, false);
 	if (event.dataTransfer.files.length) openFiles(event.dataTransfer.files);
 });
 
@@ -309,9 +360,42 @@ function applyTabs(root) {
 	buttons.forEach(b => b.setAttribute("aria-selected", b.dataset.tab === label));
 	root.querySelectorAll("[data-panel]").forEach(panel => panel.hidden = panel.dataset.panel !== label);
 }
-document.addEventListener("htmx:afterSwap", () => document.querySelectorAll(".tabs").forEach(applyTabs));
+document.addEventListener("htmx:afterSwap", () => {
+	document.querySelectorAll(".tabs").forEach(applyTabs);
+	drawCharts();
+});
 
-// blur the page while the server can not be reached
+// uplot charts from the json in data-chart, drawn again for a new theme, sized to their box
+const CHART_HEIGHT = 300;
+const charts = new WeakMap();
+const resizer = new ResizeObserver(entries => entries.forEach(({ target }) => {
+	if (target.clientWidth) charts.get(target)?.setSize({ width: target.clientWidth, height: CHART_HEIGHT });
+}));
+function drawCharts() {
+	if (window.uPlot) document.querySelectorAll(".chart[data-chart]").forEach(drawChart);
+}
+function drawChart(box) {
+	charts.get(box)?.destroy();
+	const spec = JSON.parse(box.dataset.chart);
+	const css = getComputedStyle(document.documentElement);
+	const color = name => `hsl(${css.getPropertyValue("--" + name).trim()})`;   // canvas colors from the theme tokens
+	const axis = label => ({ label, size: 60, stroke: color("muted-foreground"),
+		font: '11px "IBM Plex Mono", monospace', labelFont: '12px "IBM Plex Sans", sans-serif',
+		grid: { stroke: color("border"), width: 1 }, ticks: { stroke: color("border"), width: 1 } });
+	const options = {
+		width: box.clientWidth, height: CHART_HEIGHT,
+		scales: { x: { time: spec.time } },
+		tzDate: seconds => uPlot.tzDate(new Date(seconds * 1e3), "Etc/UTC"),   // dss times have no time zone
+		series: [{ label: spec.xLabel || (spec.time ? "Time" : "x") }, ...spec.series.map(s => ({
+			label: s.label, stroke: s.color, width: 1.6, points: spec.points ? { show: true, size: 5, fill: s.color } : {} }))],
+		axes: [axis(spec.xLabel), axis(spec.yLabel)],
+	};
+	charts.set(box, new uPlot(options, [spec.x, ...spec.series.map(s => s.y)], box));
+	resizer.observe(box);
+}
+drawCharts();
+
+// while the server can not be reached: blur the page & turn it off (inert: no clicks, no typing)
 const offline = document.getElementById("offline");
 async function ping() {
 	let up = false;
@@ -319,8 +403,10 @@ async function ping() {
 		up = (await fetch("/ping", { cache: "no-store", signal: AbortSignal.timeout(2000) })).ok;
 	} catch (error) {}
 	const wasDown = !offline.classList.contains("hidden");
-	offline.classList.toggle("hidden", up);
-	offline.classList.toggle("flex", !up);
+	show(offline, !up);
+	for (const element of document.body.children) {
+		if (element !== offline) element.inert = !up;
+	}
 	const form = document.querySelector("form");
 	if (up && wasDown && form) htmx.trigger(form, "change");   // refresh the catalog
 }
@@ -340,13 +426,13 @@ def icon(name, size="h-4 w-4"):
 
 
 def badge(text, outline=False):
-	style = "border text-foreground" if outline else "bg-secondary text-secondary-foreground"
-	return f'<span class="badge inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium whitespace-nowrap {style}">{esc(text)}</span>'
+	style = "border text-foreground" if outline else "badge-brand"
+	return f'<span class="badge inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium whitespace-nowrap shrink-0 {style}">{esc(text)}</span>'
 
 
-def panel(title, body, extra=""):
+def panel(title, body, extra="", lead=""):
 	''' fills the detail side, the body scrolls under a header as high as the catalog search bar '''
-	return f'''<div class="flex h-16 shrink-0 items-center gap-2 border-b px-5">
+	return f'''<div class="flex h-16 shrink-0 items-center gap-2 border-b px-5">{lead}
 		<h3 class="min-w-0 truncate font-semibold tracking-tight">{title}</h3>{extra}</div>
 	<div class="min-h-0 flex-1 overflow-auto"><div class="flex min-h-full flex-col p-5 pb-12">{body}</div></div>'''   # padding inside, sticky headers stick at the very top
 
@@ -369,7 +455,7 @@ def tabs(panels):
 def select(name, options):
 	''' shadcn style select, options: [(value, label)], the first is chosen, the hidden input holds the value '''
 	items = "".join(f'''<div role="option" data-value="{esc(value)}" aria-checked="{str(i == 0).lower()}" onclick="pickOption(this)"
-		class="relative flex cursor-default select-none items-center whitespace-nowrap rounded-sm py-1.5 pl-2 pr-8 text-sm hover:bg-accent hover:text-accent-foreground">
+		class="relative flex cursor-default select-none items-center whitespace-nowrap rounded-sm py-1.5 pl-2 pr-8 text-sm">
 		{esc(label)}<span class="check absolute right-2">{icon("check")}</span></div>''' for i, (value, label) in enumerate(options))
 	return f'''<div class="select relative w-36 min-w-[4.5rem]">
 		<input type="hidden" name="{esc(name)}" value="{esc(options[0][0])}">
@@ -427,25 +513,6 @@ def stats(values):
 
 ''' ** charts ** '''
 
-def nice_ticks(lo, hi, n=5):
-	''' about n round tick values between lo & hi '''
-	if not np.isfinite(lo) or not np.isfinite(hi):
-		return []
-	if hi == lo:
-		hi, lo = hi + 1, lo - 1
-	raw = (hi - lo) / n
-	magnitude = 10 ** math.floor(math.log10(raw))
-	step = min((s * magnitude for s in (1, 2, 2.5, 5, 10) if s * magnitude >= raw), default=raw)
-	return list(np.arange(math.ceil(lo / step) * step, hi + step / 2, step))
-
-
-def time_ticks(t0, t1):
-	''' 6 (epoch seconds, label) ticks between t0 & t1, dates for long spans, else hours '''
-	times = pd.date_range(pd.Timestamp(t0, unit="s"), pd.Timestamp(t1, unit="s"), periods=6)
-	label_format = "%d %b %Y" if times[-1] - times[0] > pd.Timedelta(days=3) else "%d %b %H:%M"
-	return [(t.value / 1e9, t.strftime(label_format)) for t in times]
-
-
 def decimate(x, y, max_points=MAX_CHART_POINTS):
 	''' keep min & max of buckets so peaks stay visible '''
 	if x.size <= max_points:
@@ -462,80 +529,25 @@ def decimate(x, y, max_points=MAX_CHART_POINTS):
 	return x[keep], y[keep]
 
 
-def segments(points):
-	''' split (x, y) points into runs without missing values, a line breaks at every gap '''
-	run = []
-	for x, y in points:
-		if np.isnan(y):
-			if len(run) > 1:
-				yield run
-			run = []
-		else:
-			run.append((x, y))
-	if len(run) > 1:
-		yield run
+def json_values(values):
+	''' floats for json, NaN as null: uplot breaks the line at missing values '''
+	return [None if math.isnan(v) else v for v in np.asarray(values, dtype=float).tolist()]
 
 
 def line_chart(lines, x_label="", y_label="", time_axis=False, markers=False):
-	''' lines: [(label, x float array, y array)], x as epoch seconds for time axes '''
-	width, height = 760, 300
-	left, right, top, bottom = 64, 16, 16, 44
-
-	xs = np.concatenate([x for _, x, _ in lines])
-	ys = np.concatenate([y for _, _, y in lines])
-	ys = ys[~np.isnan(ys)]
-	if not xs.size or not ys.size:
+	''' lines: [(label, x float array, y array)] sharing one x, epoch seconds for time axes, the page draws them with uplot '''
+	x = np.asarray(lines[0][1], dtype=float)
+	ys = [np.asarray(y, dtype=float) for _, _, y in lines]
+	if not x.size or all(np.isnan(y).all() for y in ys):
 		return '<p class="text-sm text-muted-foreground">no values to plot</p>'
+	if len(ys) == 1:   # curves sharing x (paired data) are short, only a single line is thinned
+		x, y = decimate(x, ys[0])
+		ys = [y]
 
-	# data ranges, a little room above & below the lines
-	x0, x1 = float(xs.min()), float(xs.max())
-	y0, y1 = float(ys.min()), float(ys.max())
-	if x1 == x0:
-		x0, x1 = x0 - 1, x1 + 1
-	pad = (y1 - y0) * 0.05 or 1.0
-	y0, y1 = y0 - pad, y1 + pad
-
-	# data -> svg coordinates
-	sx = lambda v: left + (v - x0) / (x1 - x0) * (width - left - right)
-	sy = lambda v: top + (y1 - v) / (y1 - y0) * (height - top - bottom)
-
-	parts = []
-
-	# y grid lines & labels
-	for tick in nice_ticks(y0, y1):
-		y = sy(tick)
-		parts.append(f'<line x1="{left}" x2="{width - right}" y1="{y:.1f}" y2="{y:.1f}" class="stroke-border"/>')
-		parts.append(f'<text x="{left - 8}" y="{y + 4:.1f}" text-anchor="end">{tick:.6g}</text>')
-
-	# x grid lines & labels, the outer labels align to the chart edges
-	x_ticks = time_ticks(x0, x1) if time_axis else [(t, f"{t:.6g}") for t in nice_ticks(x0, x1, 6)]
-	for i, (value, label) in enumerate(x_ticks):
-		x = sx(value)
-		anchor = "start" if i == 0 else "end" if i == len(x_ticks) - 1 else "middle"
-		parts.append(f'<line x1="{x:.1f}" x2="{x:.1f}" y1="{top}" y2="{height - bottom}" class="stroke-border" stroke-opacity="0.5"/>')
-		parts.append(f'<text x="{x:.1f}" y="{height - bottom + 18}" text-anchor="{anchor}">{esc(label)}</text>')
-
-	# the lines, with markers for irregular data
-	legend = []
-	for i, (label, x, y) in enumerate(lines):
-		color = COLORS[i % len(COLORS)]
-		x, y = decimate(x, y)
-		for run in segments(zip(x, y)):
-			points = " ".join(f"{sx(xv):.1f},{sy(yv):.1f}" for xv, yv in run)
-			parts.append(f'<polyline fill="none" stroke="{color}" stroke-width="1.6" points="{points}"/>')
-		if markers and x.size <= 400:
-			parts.extend(f'<circle cx="{sx(xv):.1f}" cy="{sy(yv):.1f}" r="2.6" fill="{color}"/>'
-				for xv, yv in zip(x, y) if not np.isnan(yv))
-		legend.append(f'<span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-sm" '
-			f'style="background:{color}"></span>{esc(label)}</span>')
-
-	# axis titles
-	parts.append(f'<text x="{(left + width - right) / 2}" y="{height - 6}" text-anchor="middle">{esc(x_label)}</text>')
-	parts.append(f'<text transform="translate(14 {(top + height - bottom) / 2}) rotate(-90)" text-anchor="middle">{esc(y_label)}</text>')
-
-	svg = (f'<svg viewBox="0 0 {width} {height}" class="h-auto w-full fill-muted-foreground" font-size="11" '
-		f'font-family="IBM Plex Mono, ui-monospace, monospace">{"".join(parts)}</svg>')
-	return f'<div class="mb-2 flex flex-wrap gap-4 text-xs">{"".join(legend)}</div>{svg}'
+	spec = {"time": time_axis, "points": markers, "xLabel": x_label, "yLabel": y_label, "x": json_values(x),
+		"series": [{"label": label, "color": COLORS[i % len(COLORS)], "y": json_values(y)}
+			for i, ((label, _, _), y) in enumerate(zip(lines, ys))]}
+	return f'<div class="chart" data-chart="{esc(json.dumps(spec))}"></div>'
 
 
 def grid_png(data):
@@ -622,7 +634,7 @@ class Browser:
 		rows = []
 		for path, code in entries[:MAX_ROWS]:
 			label = next((label for label, test in RECORD_KINDS.values() if test(code)), str(code))
-			rows.append(f'''<tr class="cursor-pointer border-b transition-colors hover:bg-muted/50" data-path="{esc(path)}" onclick="selectRow(this)"
+			rows.append(f'''<tr class="catalog-row cursor-pointer border-b transition-colors" data-path="{esc(path)}" onclick="selectRow(this)"
 				hx-get="{self.url("/record", path)}" hx-target="#detail" hx-push-url="{self.url("/", path)}">
 				<td class="truncate px-4 py-2 font-mono text-xs" title="{esc(path)}">{esc(path)}</td>
 				<td class="px-4 py-2 text-right">{badge(label)}</td></tr>''')
@@ -631,7 +643,7 @@ class Browser:
 		count = f'<span class="font-mono">{total}</span>'
 		shown = f'showing <span class="font-mono">{min(total, MAX_ROWS)}</span> of {count}' if total > MAX_ROWS else f"{count} records"
 		# fixed layout: long pathnames end with ... when the side is narrow
-		return f'''<table class="w-full table-fixed text-sm"><thead class="sticky top-0 bg-card">
+		return f'''<table class="w-full table-fixed text-sm"><thead class="sticky top-0 bg-muted">
 			<tr><th class="h-9 truncate px-4 text-left font-medium text-muted-foreground">Pathname</th>
 			<th class="h-9 w-36 truncate px-4 text-right font-medium text-muted-foreground">{shown}</th></tr></thead>
 			<tbody>{"".join(rows)}</tbody></table>'''
@@ -652,9 +664,12 @@ class Browser:
 			body = self.grid_view(rec, path)
 
 		title = f'<span class="font-mono text-sm" title="{esc(rec.path)}">{esc(rec.path)}</span>'
-		csv_link = (f'<a href="{self.url("/csv", path)}" class="ml-auto inline-flex h-8 items-center gap-1.5 rounded-md border '
-			f'px-3 text-xs font-medium shadow-sm hover:bg-accent">{icon("download", "h-3.5 w-3.5")}Download CSV</a>')
-		return panel(title, body, badge(type(rec).__name__, outline=True) + csv_link)
+		copy = (f'<button type="button" title="Copy path" data-path="{esc(rec.path)}" onclick="copyPath(this)" class="inline-flex h-7 w-7 '
+			f'shrink-0 items-center justify-center rounded-md text-brand hover:bg-accent">'
+			f'{icon("copy", "h-3.5 w-3.5")}{icon("check", "h-3.5 w-3.5 hidden")}</button>')
+		csv_link = (f'<a href="{self.url("/csv", path)}" class="ml-auto inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap '
+			f'rounded-md border px-3 text-xs font-medium text-brand shadow-sm hover:bg-accent">{icon("download", "h-3.5 w-3.5")}Download CSV</a>')
+		return panel(title, body, badge(type(rec).__name__, outline=True) + csv_link, lead=copy)
 
 	def time_series_view(self, rec):
 		series = rec.to_series()
@@ -663,7 +678,7 @@ class Browser:
 			("Start", series.index[0] if series.size else "-"), ("End", series.index[-1] if series.size else "-"),
 			("Time zone", rec.time_zone or "-"), ("Quality", "yes" if rec.quality is not None else "no")]
 		chart = line_chart([(rec.path.C, series.index.asi8 / 1e9, series.values)],
-			y_label=f"{rec.path.C} ({rec.unit})", time_axis=True, markers=isinstance(rec, phl.IrregularTs))
+			x_label=f"Time ({rec.time_zone})" if rec.time_zone else "Time", y_label=f"{rec.path.C} ({rec.unit})", time_axis=True, markers=isinstance(rec, phl.IrregularTs))
 		table = data_table(series.to_frame().head(MAX_TABLE_ROWS), series.size)
 		return info_grid(info + stats(series.values)) + tabs([("Graph", "line-chart", chart), ("Table", "table", table)])
 
@@ -769,6 +784,7 @@ class Workspace:
 			file_id=browser.id if browser else "", body=body,
 			file_tabs="".join(file_tab(b, b is browser) for b in self.files.values()),
 			style=STYLE, head_script=HEAD_SCRIPT, script=SCRIPT,
+			uplot_url=UPLOT_URL, uplot_css_url=UPLOT_CSS_URL,
 			logo_icon=icon("database", "h-5 w-5"), open_icon=icon("folder-open"), upload_icon=icon("upload-cloud", "h-10 w-10"),
 			sun_icon=icon("sun"), moon_icon=icon("moon"))
 
@@ -908,6 +924,7 @@ ICONS = {
 	"arrow-down": "M11.9999 13.1714L16.9497 8.22168L18.3639 9.63589L11.9999 15.9999L5.63599 9.63589L7.0502 8.22168L11.9999 13.1714Z",
 	"check": "M9.9997 15.1709L19.1921 5.97852L20.6063 7.39273L9.9997 17.9993L3.63574 11.6354L5.04996 10.2212L9.9997 15.1709Z",
 	"close": "M11.9997 10.5865L16.9495 5.63672L18.3637 7.05093L13.4139 12.0007L18.3637 16.9504L16.9495 18.3646L11.9997 13.4149L7.04996 18.3646L5.63574 16.9504L10.5855 12.0007L5.63574 7.05093L7.04996 5.63672L11.9997 10.5865Z",
+	"copy": "M6.9998 6V3C6.9998 2.44772 7.44752 2 7.9998 2H19.9998C20.5521 2 20.9998 2.44772 20.9998 3V17C20.9998 17.5523 20.5521 18 19.9998 18H16.9998V20.9991C16.9998 21.5519 16.5499 22 15.993 22H4.00666C3.45059 22 3 21.5554 3 20.9991L3.0026 7.00087C3.0027 6.44811 3.45264 6 4.00942 6H6.9998ZM5.00242 8L5.00019 20H14.9998V8H5.00242ZM8.9998 6H16.9998V16H18.9998V4H8.9998V6Z",
 	"download": "M13 10H18L12 16L6 10H11V3H13V10ZM4 19H20V12H22V20C22 20.5523 21.5523 21 21 21H3C2.44772 21 2 20.5523 2 20V12H4V19Z",
 	"line-chart": "M5 3V19H21V21H3V3H5ZM20.2929 6.29289L21.7071 7.70711L16 13.4142L13 10.415L8.70711 14.7071L7.29289 13.2929L13 7.58579L16 10.585L20.2929 6.29289Z",
 	"sun": "M12 18C8.68629 18 6 15.3137 6 12C6 8.68629 8.68629 6 12 6C15.3137 6 18 8.68629 18 12C18 15.3137 15.3137 18 12 18ZM12 16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8C9.79086 8 8 9.79086 8 12C8 14.2091 9.79086 16 12 16ZM11 1H13V4H11V1ZM11 20H13V23H11V20ZM3.51472 4.92893L4.92893 3.51472L7.05025 5.63604L5.63604 7.05025L3.51472 4.92893ZM16.9497 18.364L18.364 16.9497L20.4853 19.0711L19.0711 20.4853L16.9497 18.364ZM19.0711 3.51472L20.4853 4.92893L18.364 7.05025L16.9497 5.63604L19.0711 3.51472ZM5.63604 16.9497L7.05025 18.364L4.92893 20.4853L3.51472 19.0711L5.63604 16.9497ZM23 11V13H20V11H23ZM4 11V13H1V11H4Z",

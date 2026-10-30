@@ -18,7 +18,7 @@ from .dssfile import open, DssFile
 
 import os
 
-__version__ = '0.4.3'
+__version__ = '0.4.4'
 
 # bundled HEC-DSS C API library (hecdss), see heclib/version.txt
 __hecdss_version__ = '7-JA-7'
