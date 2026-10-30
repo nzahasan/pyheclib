@@ -1,5 +1,4 @@
-''' tools/dss_browser.py web server '''
-import importlib.util
+''' pyheclib/tools/dss_browser.py web server '''
 import os
 import threading
 import urllib.error
@@ -20,10 +19,8 @@ GRID = "/SHG/A/PRECIP/01JAN2020:0000/01JAN2020:0100/RADAR/"
 
 
 def load_tool():
-	spec = importlib.util.spec_from_file_location("dss_browser", os.path.join(ROOT, "tools", "dss_browser.py"))
-	module = importlib.util.module_from_spec(spec)
-	spec.loader.exec_module(module)
-	return module
+	from pyheclib.tools import dss_browser
+	return dss_browser
 
 
 @pytest.fixture(scope="module")

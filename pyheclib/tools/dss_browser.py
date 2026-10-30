@@ -2,7 +2,7 @@
 '''
 	dss_browser: browse dss files in the web browser.
 
-	    python tools/dss_browser.py [file.dss ...] [--port 8765] [--no-browser]
+	    dss_browser [file.dss ...] [--port 8765] [--no-browser]
 
 	A single file tool using the python built in http server. The page uses
 	htmx for interaction and shadcn/ui styling (tailwind + shadcn theme
@@ -26,11 +26,6 @@ import webbrowser
 import zlib
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import parse_qs, quote, urlparse
-
-# run from a clone without installing: use the repo's in-place build
-REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if os.path.isfile(os.path.join(REPO, "pyheclib", "__init__.py")):
-	sys.path.insert(0, REPO)
 
 import numpy as np
 import pandas as pd

@@ -18,7 +18,10 @@ from .dssfile import open, DssFile
 
 import os
 
-__version__ = '0.4.1'
+__version__ = '0.4.2'
+
+# bundled HEC-DSS C API library (hecdss), see heclib/version.txt
+__hecdss_version__ = '7-JA-7'
 
 
 def message_level_from_env():

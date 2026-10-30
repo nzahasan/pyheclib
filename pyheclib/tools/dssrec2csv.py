@@ -1,11 +1,7 @@
 #!/usr/bin/env python3
-import os, sys
+import os
 import argparse
 
-# run from a clone without installing: use the repo's in-place build
-REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if os.path.isfile(os.path.join(REPO, "pyheclib", "__init__.py")):
-    sys.path.insert(0, REPO)
 import numpy as np
 import pyheclib as phl
 
@@ -27,8 +23,7 @@ def main(filename, pathname, out_csv):
         record.to_series().to_csv(out_csv)
 
 
-if __name__ == "__main__":
-
+def cli():
     parser = argparse.ArgumentParser(description="write a dss record to csv")
     parser.add_argument("filename")
     parser.add_argument("pathname", help="record pathname, empty D part reads whole time series")
@@ -36,3 +31,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     main(args.filename, args.pathname, args.out_csv)
+
+
+if __name__ == "__main__":
+    cli()

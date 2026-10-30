@@ -220,13 +220,15 @@ Rules worth knowing:
 
 ## Tools
 
-Command-line tools in [`tools/`](https://github.com/nzahasan/pyheclib/blob/main/tools):
+Installing pyheclib adds these commands (on Linux, macOS and Windows):
 
 ```bash
-python3 tools/dss_browser.py file.dss [--port 8765] [--no-browser]   # browse a file in your web browser
-python3 tools/dss_catalog.py file.dss [filter] [--condensed]         # list records
-python3 tools/dssrec2csv.py file.dss pathname out.csv                # export one record to csv
+dss_browser file.dss [--port 8765] [--no-browser]   # browse a file in your web browser
+dss_catalog file.dss [filter] [--condensed]         # list records
+dssrec2csv file.dss pathname out.csv                # export one record to csv
 ```
+
+They are also available as `python -m pyheclib.tools.<name>`.
 
 The browser opens one or more files in tabs (or drag files onto the page). Search records by
 text or by part (`B=GAGE C=FLOW*`), view metadata, statistics, a graph or table of the data,
@@ -263,6 +265,28 @@ Code layout:
 - `pyheclib/dsspath.py`: `DssPath`
 - `pyheclib/dssfile.py`: `open` and `DssFile`
 - `src/_core.pyx`: thin Cython wrapper around the HEC-DSS C API
+
+## Bundled HEC-DSS library
+
+pyheclib bundles the official HEC-DSS C API library (`hecdss`) version **7-JA-7**, built by
+the Hydrologic Engineering Center ([source code](https://github.com/HydrologicEngineeringCenter/hec-dss)).
+The binaries come unchanged from HEC's Maven repository,
+[`mil/army/usace/hec/hecdss/7-JA-7-<platform>`](https://www.hec.usace.army.mil/nexus/repository/maven-public/mil/army/usace/hec/hecdss/):
+
+| File | Platform | Package |
+|---|---|---|
+| `heclib/macos/libhecdss.dylib` | macOS, universal (arm64 + x86_64) | `7-JA-7-darwin-aarch64`, `7-JA-7-darwin-x86_64` |
+| `heclib/linux/libhecdss.so` | Linux x86_64 | `7-JA-7-linux-x86_64` |
+| `heclib/windows/hecdss.dll` | Windows x64 | `7-JA-7-win-x86_64` |
+
+`heclib/include/hecdss.h` is the matching header. `heclib/windows/hecdss.def` is generated from the
+dll's export table. The details are also in
+[`heclib/version.txt`](https://github.com/nzahasan/pyheclib/blob/main/heclib/version.txt).
+
+```python
+phl.__hecdss_version__   # '7-JA-7', the bundled library release
+phl.api_version()        # version reported by the hecdss C API
+```
 
 ## Resources
 

@@ -27,6 +27,8 @@ import pyheclib as phl
 
 plt.style.use("ggplot")
 plt.rcParams.update({
+	"font.family": "monospace",
+	"font.monospace": ["IBM Plex Mono", "JetBrains Mono", "Menlo", "Consolas", "DejaVu Sans Mono"],
 	"figure.dpi": 100,
 	"savefig.dpi": 200,
 	"savefig.bbox": "tight",

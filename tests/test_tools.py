@@ -1,4 +1,4 @@
-''' command line tools in tools/ '''
+''' command line tools in pyheclib/tools '''
 import os
 import subprocess
 import sys
@@ -12,7 +12,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def run_tool(name, *args):
 	env = {**os.environ, "PYTHONPATH": ROOT}
-	result = subprocess.run([sys.executable, os.path.join(ROOT, "tools", name), *args],
+	result = subprocess.run([sys.executable, "-m", f"pyheclib.tools.{name}", *args],
 		capture_output=True, text=True, env=env, check=True)
 	return result.stdout
 
@@ -28,24 +28,24 @@ def make_file(tmp_path):
 
 def test_catalog_tool(tmp_path):
 	fname = make_file(tmp_path)
-	full = run_tool("dss_catalog.py", fname)
-	condensed = run_tool("dss_catalog.py", fname, "--condensed")
+	full = run_tool("dss_catalog", fname)
+	condensed = run_tool("dss_catalog", fname, "--condensed")
 
 	assert "01Feb2020" in full and len(full.splitlines()) == 4
 	assert "/A/B/FLOW/01JAN2020-01FEB2020/1Hour/F/" in condensed and len(condensed.splitlines()) == 3
-	assert len(run_tool("dss_catalog.py", fname, "/A/B/STAGE*/*/*/*/").splitlines()) == 1
+	assert len(run_tool("dss_catalog", fname, "/A/B/STAGE*/*/*/*/").splitlines()) == 1
 
 
 def test_csv_tool(tmp_path):
 	fname = make_file(tmp_path)
 	out = tmp_path / "out.csv"
 
-	run_tool("dssrec2csv.py", fname, "/A/B/FLOW//1HOUR/F/", str(out))
+	run_tool("dssrec2csv", fname, "/A/B/FLOW//1HOUR/F/", str(out))
 	ts = pd.read_csv(out, index_col=0, parse_dates=True)
 	assert ts.shape == (800, 1) and ts.iloc[-1, 0] == 799.0
 
-	run_tool("dssrec2csv.py", fname, "/A/B/STAGE-FLOW///R/", str(out))
+	run_tool("dssrec2csv", fname, "/A/B/STAGE-FLOW///R/", str(out))
 	assert pd.read_csv(out, index_col=0).columns.tolist() == ["c1"]
 
-	run_tool("dssrec2csv.py", fname, "/A/B/DEM///F/", str(out))
+	run_tool("dssrec2csv", fname, "/A/B/DEM///F/", str(out))
 	np.testing.assert_allclose(np.loadtxt(out, delimiter=","), np.arange(4.0).reshape(2, 2))

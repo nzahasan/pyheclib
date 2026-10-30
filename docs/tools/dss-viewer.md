@@ -9,19 +9,20 @@ computer and needs nothing besides pyheclib.
 
 ## Get it
 
-The viewer is a single script, `tools/dss_browser.py`, in the
-[GitHub repository](https://github.com/nzahasan/pyheclib/tree/main/tools).
-Download it, or clone the repository:
+The viewer comes with pyheclib as the `dss_browser` command:
 
 ```bash
-git clone https://github.com/nzahasan/pyheclib
-cd pyheclib
+pip install pyheclib
 ```
+
+It is a single script,
+[`pyheclib/tools/dss_browser.py`](https://github.com/nzahasan/pyheclib/tree/main/pyheclib/tools),
+and also runs as `python -m pyheclib.tools.dss_browser`.
 
 ## Start it
 
 ```bash
-python3 tools/dss_browser.py example.dss
+dss_browser example.dss
 ```
 
 The viewer opens in your web browser at `http://127.0.0.1:8765/`.
@@ -30,7 +31,7 @@ Press `Ctrl+C` in the terminal to stop it.
 You can open more than one file:
 
 ```bash
-python3 tools/dss_browser.py basin.dss radar.dss
+dss_browser basin.dss radar.dss
 ```
 
 Options:
@@ -64,5 +65,5 @@ If you stop the server, the page fades out. It reconnects when the server starts
 The repository has an example file with every record type:
 
 ```bash
-python3 tools/dss_browser.py examples/example.dss
+dss_browser examples/example.dss
 ```

@@ -1,27 +1,27 @@
 # Command line tools
 
-These small scripts live in the
-[`tools` folder](https://github.com/nzahasan/pyheclib/tree/main/tools) of the repository.
-They need pyheclib to be installed, or a clone of the repository with the extension built.
+Installing pyheclib adds these commands on Linux, macOS and Windows. They live in
+[`pyheclib/tools`](https://github.com/nzahasan/pyheclib/tree/main/pyheclib/tools) and also run as
+`python -m pyheclib.tools.<name>`, for example from a clone with the extension built in place.
 
-## List records: `dss_catalog.py`
+## List records: `dss_catalog`
 
 Prints every record in a file with its record type code.
 
 ```bash
-python3 tools/dss_catalog.py example.dss
+dss_catalog example.dss
 ```
 
 Show each time series once instead of once per block:
 
 ```bash
-python3 tools/dss_catalog.py example.dss --condensed
+dss_catalog example.dss --condensed
 ```
 
 Show only matching records (use `*` in any part):
 
 ```bash
-python3 tools/dss_catalog.py example.dss "/DEMO/*/FLOW/*/*/*/"
+dss_catalog example.dss "/DEMO/*/FLOW/*/*/*/"
 ```
 
 Record type codes:
@@ -33,12 +33,12 @@ Record type codes:
 | 205 | paired data |
 | 4xx | gridded data (420, 421 and so on, by grid type) |
 
-## Export to CSV: `dssrec2csv.py`
+## Export to CSV: `dssrec2csv`
 
 Saves one record as a CSV file.
 
 ```bash
-python3 tools/dssrec2csv.py example.dss "/DEMO/OUTLET/FLOW//1HOUR/OBS/" flow.csv
+dssrec2csv example.dss "/DEMO/OUTLET/FLOW//1HOUR/OBS/" flow.csv
 ```
 
 - Time series: one row per time, with the time and the value.

@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
-import os, sys, shutil, numpy
+import os, re, sys, shutil, numpy
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 from Cython.Build import cythonize
 
 root = os.path.dirname(os.path.realpath(__file__))
 heclib = os.path.join(root, 'heclib')
+
+# version from pyheclib/__init__.py, the package can't be imported before the extension is built
+with open(os.path.join(root, 'pyheclib', '__init__.py'), encoding='utf-8') as f:
+	version = re.search(r"^__version__ = '([^']+)'", f.read(), re.M).group(1)
 
 # platform dependent
 library_dirs_list = []
@@ -79,7 +83,7 @@ extension = [
 
 setup(
 	python_requires='>=3.8',
-	version='0.4.1',
+	version=version,
 	name='pyheclib',
 	description='Read and write HEC-DSS version 7 files from Python',
 	long_description=open(os.path.join(root, 'readme.md'), encoding='utf-8').read(),
@@ -87,9 +91,15 @@ setup(
 	url='https://github.com/nzahasan/pyheclib',
 	project_urls={'Documentation': 'https://nzahasan.github.io/pyheclib'},
 	license='MIT',
-	packages=['pyheclib'],
+	packages=['pyheclib', 'pyheclib.tools'],
 	package_data={'pyheclib': ['*.so', '*.dylib', '*.dll']},
 	install_requires=['numpy', 'pandas'],
+	# command line tools, pip makes .exe launchers on windows and scripts on linux & macos
+	entry_points={'console_scripts': [
+		'dss_browser = pyheclib.tools.dss_browser:main',
+		'dss_catalog = pyheclib.tools.dss_catalog:cli',
+		'dssrec2csv = pyheclib.tools.dssrec2csv:cli',
+	]},
 	cmdclass={'build_ext': build_ext_hecdss},
 	ext_modules=cythonize(extension, language_level='3', include_path=['src']),
 )
