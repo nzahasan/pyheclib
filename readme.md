@@ -234,9 +234,10 @@ The browser opens one or more files in tabs (or drag files onto the page). Searc
 text or by part (`B=GAGE C=FLOW*`), view metadata, statistics, a graph or table of the data,
 and download a record as csv. Each record has its own link (`/?file=1&path=/A/B/C/D/E/F/`).
 
-![dss browser, light mode](https://raw.githubusercontent.com/nzahasan/pyheclib/main/assets/readme/dss_browser_light.png)
-
-![dss browser, dark mode](https://raw.githubusercontent.com/nzahasan/pyheclib/main/assets/readme/dss_browser.png)
+<p>
+<img src="https://raw.githubusercontent.com/nzahasan/pyheclib/main/assets/readme/dss_browser_light.png" alt="dss browser, light mode" width="49%">
+<img src="https://raw.githubusercontent.com/nzahasan/pyheclib/main/assets/readme/dss_browser.png" alt="dss browser, dark mode" width="49%">
+</p>
 
 ## Examples and notebooks
 
