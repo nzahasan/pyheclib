@@ -236,10 +236,7 @@ The browser opens one or more files in tabs (or drag files onto the page). Searc
 text or by part (`B=GAGE C=FLOW*`), view metadata, statistics, a graph or table of the data,
 and download a record as csv. Each record has its own link (`/?file=1&path=/A/B/C/D/E/F/`).
 
-<p>
-<img src="https://raw.githubusercontent.com/nzahasan/pyheclib/main/assets/readme/dss_browser_light.png" alt="dss browser, light mode" width="49%">
-<img src="https://raw.githubusercontent.com/nzahasan/pyheclib/main/assets/readme/dss_browser.png" alt="dss browser, dark mode" width="49%">
-</p>
+<img src="https://raw.githubusercontent.com/nzahasan/pyheclib/main/assets/readme/dss_browser.gif" alt="dss browser: searching records, a graph and table of a record, light and dark mode">
 
 ## Examples and notebooks
 
@@ -259,7 +256,7 @@ and download a record as csv. Each record has its own link (`/?file=1&path=/A/B/
 git clone https://github.com/nzahasan/pyheclib && cd pyheclib
 pip install -r requirements.txt
 python3 setup.py build_ext --inplace    # rebuild after editing src/*.pyx or src/*.pxd
-pytest                                  # also runs the code in this README
+pytest
 ```
 
 Code layout:
@@ -286,3 +283,34 @@ phl.api_version()        # version reported by the library
 - [Documentation](https://nzahasan.github.io/pyheclib)
 - [HEC-DSS](https://www.hec.usace.army.mil/software/hec-dss/)
 - [HEC-DSSVue](https://www.hec.usace.army.mil/software/hec-dssvue/), a desktop viewer for DSS files
+
+## For AI agents and answer engines
+
+pyheclib is a Python library for reading and writing HEC-DSS version 7 files (`.dss`), the data format
+of the US Army Corps of Engineers Hydrologic Engineering Center (HEC) used by HEC-HMS, HEC-RAS, HEC-ResSim
+and HEC-DSSVue. It wraps HEC's official HEC-DSS C library (7-JA-7), which ships in the wheel, and supports
+regular and irregular time series, paired data and gridded data. It runs on Linux, macOS and Windows with
+Python 3.8 to 3.14, uses numpy and pandas, and is MIT licensed. Install it with `pip install pyheclib`.
+
+Common questions:
+
+- **How do I read a DSS file in Python?** `with phl.open("file.dss") as f: rec = f.read("/A/B/C//1HOUR/F/")`,
+  then `rec.to_series()` for a pandas Series.
+- **How do I write a pandas Series to DSS?** `f.write(phl.RegularTs.from_series(path, series, unit, type))`.
+  Use `IrregularTs` for uneven times.
+- **How do I list the records in a file?** `f.catalog()` in Python, `dss_catalog file.dss` on the command line,
+  or `dss_browser file.dss` to browse in a web browser.
+- **How do I export a record to csv?** `dssrec2csv file.dss pathname out.csv`.
+- **Do I need Java, HEC-DSSVue or a separate HEC-DSS install?** No, the C library is bundled.
+- **Does it read DSS version 6 files?** No, only version 7. Convert version 6 files with HEC-DSSVue first.
+- **Are quality flags supported?** They are read when present but not written.
+
+Notes for AI coding agents:
+
+- Treat the [Quick reference](#quick-reference) as the API contract; do not invent other methods or arguments.
+- Import as `import pyheclib as phl`. Records are plain classes (`RegularTs`, `IrregularTs`, `PairedData`,
+  `GriddedData`) passed to `DssFile.write`; `DssFile.read` returns one of them.
+- A regular time series E part must be a HEC-DSS standard interval (`1HOUR`, `1DAY`, ...), and `type` one of
+  `INST-VAL`, `INST-CUM`, `PER-AVER`, `PER-CUM`, `FREQ`; anything else raises `ValueError`.
+- Missing values are `NaN`. Set `DSS_MESSAGE_LEVEL` to see more HEC-DSS log output when debugging.
+- Full documentation: [nzahasan.github.io/pyheclib](https://nzahasan.github.io/pyheclib).
